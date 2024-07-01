@@ -1,13 +1,18 @@
+from typing import Annotated
+from fastapi import Depends
 from fastapi.routing import APIRouter
 from db_manager import DBM
 from datetime import datetime
 
 
+from schemas import TokenPayload
+from utils import get_current_user
+
 router = APIRouter()
 
 
 @router.get('/samples')
-def get_samples():
+def get_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return DBM.samples.get_all()
 
 @router.get('/samples/{sample_id}')
