@@ -7,6 +7,7 @@ from routers.samples import router as samples_router
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
+
 app = FastAPI()
 
 origins = ["*"]
