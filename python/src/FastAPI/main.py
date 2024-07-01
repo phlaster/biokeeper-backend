@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 
-from smartphone_routers import router as smartphone_router
 from routers.users import router as users_router
 from routers.researches import router as researches_router
 from routers.kits import router as kit_router
@@ -24,7 +23,6 @@ app.include_router(users_router)
 app.include_router(researches_router)
 app.include_router(kit_router)
 app.include_router(samples_router)
-app.include_router(smartphone_router)
 
 
 if __name__ == "__main__":
