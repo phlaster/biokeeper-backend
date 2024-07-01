@@ -1,11 +1,18 @@
+from typing import Annotated
+from fastapi import Depends
 from fastapi.routing import APIRouter
 from db_manager import DBM
 
+from schemas import TokenPayload
+from utils import get_current_user
+
+from schemas import TokenPayload
+from utils import get_current_user
 
 router = APIRouter()
 
 @router.get('/kits')
-def get_kits():
+def get_kits(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return DBM.kits.get_all()
 
 @router.get('/kits/{kit_id}')

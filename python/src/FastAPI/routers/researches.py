@@ -1,11 +1,16 @@
+from typing import Annotated
+from fastapi import Depends
 from fastapi.routing import APIRouter
 from db_manager import DBM
 from datetime import date
 
+from schemas import TokenPayload
+from utils import get_current_user
+
 router = APIRouter()
 
 @router.get('/researches')
-def get_researches():
+def get_researches(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return DBM.researches.get_all()
 
 @router.get('/researches/{research_name}')

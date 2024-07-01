@@ -18,16 +18,23 @@ certifi==2024.2.2
     #   httpcore
     #   httpx
     #   requests
+cffi==1.16.0
+    # via cryptography
 charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via
     #   typer
     #   uvicorn
+cryptography==42.0.7
 dnspython==2.6.1
     # via email-validator
 email-validator==2.1.1
     # via fastapi
+exceptiongroup==1.2.1
+    # via
+    #   anyio
+    #   cattrs
 fastapi==0.111.0
 fastapi-cli==0.0.4
     # via fastapi
@@ -72,12 +79,15 @@ pandas==2.2.2
 platformdirs==4.2.2
     # via requests-cache
 psycopg2-binary==2.9.9
+pycparser==2.22
+    # via cffi
 pydantic==2.7.1
     # via fastapi
 pydantic-core==2.18.2
     # via pydantic
 pygments==2.18.0
     # via rich
+pyjwt==2.8.0
 python-dateutil==2.9.0.post0
     # via pandas
 python-dotenv==1.0.1
@@ -113,10 +123,13 @@ typer==0.12.3
     # via fastapi-cli
 typing-extensions==4.11.0
     # via
+    #   anyio
+    #   cattrs
     #   fastapi
     #   pydantic
     #   pydantic-core
     #   typer
+    #   uvicorn
 tzdata==2024.1
     # via pandas
 ujson==5.10.0

@@ -25,7 +25,7 @@ LOGDATA = {
     "db_user" : "postgres",
     "db_pass" : "root",
     "db_port" : 5432,
-    "db_host" : "db_postgres" if in_docker() else POSTGRES_DOCKER_IP
+    "db_host" : "core_db" if in_docker() else POSTGRES_DOCKER_IP
 }
 
 

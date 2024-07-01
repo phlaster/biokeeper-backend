@@ -1,14 +1,18 @@
 
 from fastapi.routing import APIRouter
 from db_manager import DBM
-from fastapi import Body, status
-from typing import Any
+from fastapi import Body, Depends, status
+from typing import Annotated, Any
 from fastapi.responses import JSONResponse
+
+from schemas import TokenPayload
+from utils import get_current_user
+
 
 router = APIRouter()
 
 @router.get('/users')
-def get_users():
+def get_users(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     """
     Retrieves all users.
     Returns a dictionary containing information about all users.
