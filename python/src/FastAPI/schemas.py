@@ -9,5 +9,4 @@ class Role(BaseModel):
 class TokenPayload(BaseModel):
     username: str
     role : Role
-    permissions: int
     exp: datetime.datetime
