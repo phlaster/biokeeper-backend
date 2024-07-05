@@ -32,7 +32,7 @@ EXECUTE FUNCTION refresh_last_updated();
 
 CREATE TRIGGER research_status_trigger
 BEFORE INSERT OR UPDATE ON "research"
-FOR EACH ROW
+FOR EACH ROW    
 EXECUTE FUNCTION update_status_n('research_statuses');
 
 CREATE INDEX ON "research" (name);
