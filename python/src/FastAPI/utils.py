@@ -1,8 +1,7 @@
 from typing import Annotated
-
+from exceptions import NotFoundException
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-
 from schemas import TokenPayload
 
 from crypto import verify_jwt_token
@@ -58,3 +57,15 @@ async def get_observer(token: Annotated[TokenPayload, Depends(get_current_user)]
     if token.role.name != "observer":
         raise NotEnoughPermissionsException
     return token
+
+def validate_return_from_db(data,
+                      search_param_name,
+                      search_param_value,
+                      logger=None,
+                      exception=NotFoundException):
+    key,value = data.items()[0]
+    if not value:
+        if logger:
+            logger.log(f"Error: Can't find {key} using {search_param_name} with {search_param_value}.", 0)
+        raise exception
+    return value
