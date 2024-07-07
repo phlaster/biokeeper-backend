@@ -4,7 +4,7 @@ from fastapi.routing import APIRouter
 from db_manager import DBM
 from exceptions import NoKitException, HTTPNotFoundException
 from schemas import TokenPayload
-from utils import get_current_user
+from utils import get_admin, get_current_user
 
 from schemas import TokenPayload
 from utils import get_current_user
@@ -24,5 +24,5 @@ def get_kit(kit_id, token_payload: Annotated[TokenPayload, Depends(get_current_u
     return dbm_kit
 
 @router.post('/kits')
-def create_kit(n_qrs: int, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
+def create_kit(n_qrs: int, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     return DBM.kits.new(n_qrs)
