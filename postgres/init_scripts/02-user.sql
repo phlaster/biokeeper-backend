@@ -12,7 +12,6 @@ EXECUTE FUNCTION refresh_last_updated();
 
 
 CREATE INDEX ON "user" (name);
-CREATE INDEX ON "user" (status);
 ANALYZE "user";
 
 
