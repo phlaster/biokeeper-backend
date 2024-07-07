@@ -3,21 +3,14 @@ from DBM.UsersManager import UsersManager
 from DBM.KitsManager import KitsManager
 from DBM.ResearchesManager import ResearchesManager
 
+from utils import get_closest_toponym 
 from multimethod import multimethod, Union
-from geopy.geocoders import Nominatim
 import concurrent.futures
 from exceptions import NoSampleException, NoQrCodeException
 import datetime
 from utils import validate_return_from_db
 
 class SamplesManager(AbstractDBManager):
-    def _get_closest_toponym(self, gps):
-        geolocator = Nominatim(user_agent="Biokeeper")
-        try:
-            location = geolocator.reverse(f"{gps[0]}, {gps[1]}")
-            return location.raw['display_name']
-        except Exception as e:
-            return str(gps)
 
     def _update_sample(self, identifier, column_name: str, value: Union[str, bytes], log=False):
         sample_id = self.has(identifier, log=log)
@@ -111,77 +104,30 @@ class SamplesManager(AbstractDBManager):
 
     @multimethod
     def new(self,
-        qr_unique_hex: str,
-        research_name: str,
+        qr_id: int,
+        research_id: str,
+        owner_id: int,
         collected_at: datetime.datetime,
         gps: tuple[float, float],
+        photo_hex_string: str | None = None,
         log=False
     ):
-        # Invoking necessary managers
-        users = UsersManager(self.logdata, logfile=self.logfile)
-        kits = KitsManager(self.logdata, logfile=self.logfile)
-        researches = ResearchesManager(self.logdata, logfile=self.logfile)
 
         if (abs(gps[0]) > 90.0 or abs(gps[1]) > 180.0):
             return self.logger.log(f"Error: GPS coordinates {gps} are out of bounds.", 0) if log else 0
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            # Futures
-            closest_toponym_future = executor.submit(self._get_closest_toponym, gps)
-            research_info_future = executor.submit(researches.get_info, research_name)
-            qr_info_future = executor.submit(self.get_qr_info, qr_unique_hex)
-
-            if collected_at > datetime.datetime.now(datetime.timezone.utc) and log:
-                self.logger.log(f"Warn : The sample seems to be collected in future at {collected_at}.")
-
-            research_info = research_info_future.result() #researches.get_info(research_name)
-            if not research_info:
-                return self.logger.log(f"Error: Invalid research name '{research_name}'.", 0) if log else 0
-
-            if research_info["status"] != "ongoing":
-                return self.logger.log(f"Error: Research '{research_name}' is not in 'ongoing' status.", 0) if log else 0
-
-            qr_info = qr_info_future.result() #self.get_qr_info(qr_unique_hex)
-            if not qr_info:
-                return self.logger.log(f"Error: No such QR in database.", 0) if log else 0
-            
-            qr_id = qr_info["id"]
-            if qr_info["is_used"]:
-                return self.logger.log(f"Error: QR #{qr_id} already 'is_used'.", 0) if log else 0
-            
-            kit_id = qr_info["kit_id"]
-            if not kit_id:
-                return self.logger.log(f"Error: QR code is not assigned to any kit.", 0) if log else 0
-
-            kit_info = kits.get_info(kit_id)
-            if not kit_info:
-                return self.logger.log(f"Error: No #{kit_id} was found (very strange!).", 0) if log else 0
-            
-            kit_owner = kit_info["owner"]
-            if not kit_owner:
-                return self.logger.log(f"Error: Kit #{kit_id} has no owner.", 0) if log else 0
-
-            if kit_info["status"] != "activated":
-                return self.logger.log(f"Error: Kit associated with QR hasn't been activated.", 0) if log else 0
-
-            owner_name = kit_owner["name"]
-            kit_owner_status = users.status_of(owner_name)
-            if kit_owner_status not in ['admin', 'volunteer']:
-                return self.logger.log(f"Error: Owner of kit '{kit_owner}' is of status '{kit_owner_status}', which is not enough to publish samples.", False) if log else False
-            
         
-            research_id = research_info['id']
-            owner_id = kit_owner["id"]
-            
-            closest_toponym = ', '.join(closest_toponym_future.result().split(", ")[:-4])
+        closest_toponym = ', '.join(get_closest_toponym(gps).split(", ")[:-4])
+
         with self.db as (conn, cursor):
-            # Pushing the sample into the database
             cursor.execute("""
                 INSERT INTO "sample"
                 (research_id, owner_id, qr_id, collected_at, gps)
                 VALUES (%s, %s, %s, %s, POINT(%s))
                 RETURNING id
-            """, (research_id, owner_id, qr_id, collected_at, str(gps)))
+            """, (research_id, owner_id, qr_id, collected_at, str(gps))
+            )
             sample_id = cursor.fetchone()[0]
+
             log and self.logger.log(f"""Info : For research #{research_id} user #{owner_id} collected a sample #{sample_id} near "{closest_toponym}".""")
 
             # Updating the QR code status
@@ -199,8 +145,9 @@ class SamplesManager(AbstractDBManager):
                 WHERE id = %s
                 RETURNING n_samples_collected
             """, (owner_id,))
+
             new_personal_score = cursor.fetchone()[0]
-            log and self.logger.log(f"Info : Personal counter of user '{owner_name}' is now {new_personal_score}")
+            log and self.logger.log(f"Info : Personal counter of user with id '{owner_id}' is now {new_personal_score}")
 
             # Updating the research counter
             cursor.execute("""
@@ -209,8 +156,9 @@ class SamplesManager(AbstractDBManager):
                 WHERE id = %s
                 RETURNING n_samples
             """, (research_id,))
+
             n_samples_in_research = cursor.fetchone()[0]
-            log and self.logger.log(f"Info : Counter of collected samples for '{research_name}' is now {n_samples_in_research}")
+            log and self.logger.log(f"Info : Counter of collected samples for research with id '{research_id}' is now {n_samples_in_research}")
 
             conn.commit()
 

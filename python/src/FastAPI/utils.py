@@ -74,6 +74,11 @@ async def get_volunteer(token: Annotated[TokenPayload, Depends(get_current_user)
         raise NotEnoughPermissionsException
     return token
 
+async def get_volunteer_or_admin(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
+    if not is_admin(token) and not is_volunteer(token):
+        raise NotEnoughPermissionsException
+    return token
+
 async def get_observer(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
     if not is_observer(token):
         raise NotEnoughPermissionsException
@@ -90,3 +95,13 @@ def validate_return_from_db(data,
             logger.log(f"Error: Can't find {key} using {search_param_name} with {search_param_value}.", 0)
         raise exception
     return value
+
+
+from geopy.geocoders import Nominatim
+def get_closest_toponym(gps):
+    geolocator = Nominatim(user_agent="Biokeeper")
+    try:
+        location = geolocator.reverse(f"{gps[0]}, {gps[1]}")
+        return location.raw['display_name']
+    except Exception as e:
+        return str(gps)

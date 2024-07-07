@@ -73,6 +73,7 @@ class KitsManager(AbstractDBManager):
             kit_data = cursor.fetchone()
 
             if kit_data:
+                kit_info_dict['id'] = kit_id
                 kit_info_dict['unique_hex'] = kit_data[0]
                 kit_info_dict['created_at'] = kit_data[1].astimezone().isoformat()
                 kit_info_dict['updated_at'] = kit_data[2].astimezone().isoformat()

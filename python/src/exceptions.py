@@ -28,3 +28,8 @@ class HTTPNotFoundException(HTTPException):
     def __init__(self, *args, **kwargs):
         super().__init__(status_code=self.status_code, *args, **kwargs)
 
+class HTTPConflictException(HTTPException):
+    status_code = status.HTTP_409_CONFLICT
+    def __init__(self, *args, **kwargs):
+        super().__init__(status_code=self.status_code, *args, **kwargs)
+
