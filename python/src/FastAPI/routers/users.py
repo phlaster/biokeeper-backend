@@ -27,8 +27,9 @@ def get_user_by_id(user_identifier, token_payload: Annotated[TokenPayload, Depen
     try:
         dbm_user = DBM.users.get_info_by_id(user_identifier)
     except NoUserException:
-        raise HTTPNotFoundException(f'User {user_identifier} not found')
+        raise HTTPNotFoundException(details=f'User {user_identifier} not found')
     return dbm_user
+
 
 # @router.get('/users/{user_name}/score')
 # def get_user_score(user_name, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):

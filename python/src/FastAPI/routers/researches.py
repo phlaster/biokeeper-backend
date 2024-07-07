@@ -18,7 +18,7 @@ def get_research(research_identifier, token_payload: Annotated[TokenPayload, Dep
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
     except NoResearchException:
-        raise HTTPNotFoundException(f'Research {research_identifier} not found')
+        raise HTTPNotFoundException(details=f'Research {research_identifier} not found')
     return dbm_research
     
 

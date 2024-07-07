@@ -52,18 +52,30 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Tok
         raise no_user_in_db_exception
     return TokenPayload(**payload)
 
+def role_is(token: Annotated[TokenPayload, Depends(get_current_user)], role_name):
+    return token.role.name == role_name
+
+def is_admin(token: Annotated[TokenPayload, Depends(get_current_user)]):
+    return role_is(token, "admin")
+
+def is_observer(token: Annotated[TokenPayload, Depends(get_current_user)]):
+    return role_is(token, "observer")
+
+def is_volunteer(token: Annotated[TokenPayload, Depends(get_current_user)]):
+    return role_is(token, "volunteer")
+
 async def get_admin(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
-    if token.role.name != "admin":
+    if not is_admin(token):
         raise NotEnoughPermissionsException
     return token
 
 async def get_volunteer(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
-    if token.role.name != "volunteer":
+    if not is_volunteer(token):
         raise NotEnoughPermissionsException
     return token
 
 async def get_observer(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
-    if token.role.name != "observer":
+    if not is_observer(token):
         raise NotEnoughPermissionsException
     return token
 

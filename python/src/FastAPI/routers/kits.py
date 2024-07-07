@@ -20,7 +20,7 @@ def get_kit(kit_id, token_payload: Annotated[TokenPayload, Depends(get_current_u
     try:
         dbm_kit = DBM.kits.get_info(kit_id)
     except NoKitException:
-        raise HTTPNotFoundException(f'Kit {kit_id} not found')
+        raise HTTPNotFoundException(details=f'Kit {kit_id} not found')
     return dbm_kit
 
 @router.post('/kits')
