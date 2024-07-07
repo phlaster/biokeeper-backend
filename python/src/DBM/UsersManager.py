@@ -111,7 +111,18 @@ class UsersManager(AbstractDBManager):
             conn.commit()
             log and self.logger.log(f"Info : User #{id} '{user_name}' has been added to the system", id)
         return id
+    
+    def get_user_participated_researches(self, identifier, log=False):
+        user_id = self.has(identifier)
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT research_id
+                FROM "user_research"
+                WHERE user_id = %s
+            """, (user_id,))
+            researches = cursor.fetchall()
 
+        return researches
 
     # @multimethod
     # def rename(self, user_identifier, new_user_name: str, log=False):
