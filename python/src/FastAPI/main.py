@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from routers.users import router as users_router
 from routers.researches import router as researches_router
@@ -8,7 +8,18 @@ from routers.samples import router as samples_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url = None)
+
+from routers.docs import get_current_username, get_swagger_ui_html, get_openapi
+
+@app.get("/docs", include_in_schema=False)
+async def get_documentation(username: str = Depends(get_current_username)):
+    return get_swagger_ui_html(openapi_url="/openapi.json", title="docs")
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def openapi(username: str = Depends(get_current_username)):
+    return get_openapi(title = "FastAPI", version="0.1.0", routes=app.routes)
 
 origins = ["*"]
 
