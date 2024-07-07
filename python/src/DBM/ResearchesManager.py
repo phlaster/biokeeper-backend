@@ -47,7 +47,7 @@ class ResearchesManager(AbstractDBManager):
 
         with self.db as (conn, cursor):
             cursor.execute("""
-                SELECT name, created_at, updated_at, created_by, day_start, day_end, n_samples, comment
+                SELECT name, created_at, updated_at, created_by, day_start, day_end, n_samples, comment, approval_required
                 FROM "research"
                 WHERE id = %s
             """, (research_id,))
@@ -64,6 +64,7 @@ class ResearchesManager(AbstractDBManager):
             research_info_dict['day_end'] = research_data[5].strftime("%Y-%m-%d") if research_data[5] else None
             research_info_dict['n_samples'] = research_data[6]
             research_info_dict['comment'] = research_data[7]
+            research_info_dict['approval_required'] = research_data[8]
 
         return research_info_dict
 
@@ -72,7 +73,7 @@ class ResearchesManager(AbstractDBManager):
         return self._all_getter("id", "research")
 
     
-    def new(self, research_name: str, user_name: str, day_start: datetime.date, research_comment: str = None, log=False):
+    def new(self, research_name: str, user_name: str, day_start: datetime.date, research_comment: str = None, log=False, approval_required=True):
         if self.has(research_name):
             return self.logger.log(f"Error: Research '{research_name}' is already exists.", 0) if log else 0
 
@@ -88,13 +89,13 @@ class ResearchesManager(AbstractDBManager):
         with self.db as (conn, cursor):
             cursor.execute("""
                 INSERT INTO "research"
-                (name, comment, created_by, day_start)
-                VALUES (%s, %s, %s, %s)
+                (name, comment, created_by, day_start,approval_required)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING id
-            """, (research_name, research_comment, user_id, day_start))
+            """, (research_name, research_comment, user_id, day_start, approval_required))
             research_id = cursor.fetchone()[0]
             conn.commit()
-        log and self.logger.log(f"Info : Created research #{research_id} '{research_name}' starting on {day_start} by '{user_name}'", research_id)
+        log and self.logger.log(f"Info : Created research #{research_id} '{research_name}' starting on {day_start} by '{user_name}'. Approval required: {approval_required}", research_id)
         return research_id
 
     
