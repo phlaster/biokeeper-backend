@@ -73,19 +73,7 @@ class ResearchesManager(AbstractDBManager):
         return self._all_getter("id", "research")
 
     
-    def new(self, research_name: str, user_name: str, day_start: datetime.date, research_comment: str = None, log=False, approval_required=True):
-        if self.has(research_name):
-            return self.logger.log(f"Error: Research '{research_name}' is already exists.", 0) if log else 0
-
-        users = UsersManager(self.logdata, logfile=self.logfile)
-        user_id = users.has(user_name)
-        if not user_id:
-            return self.logger.log(f"Error: Can't assign new research '{research_name}' to a nonexisting user '{user_name}'.", 0) if log else 0
-
-        user_status = users.status_of(user_name) # Careful here!
-        if user_status != "admin":
-            return self.logger.log(f"Error: User '{user_name}' of status '{user_status}' has no privilege to create researches.", 0) if log else 0
-
+    def new(self, research_name: str, user_id: int, day_start: datetime.date, research_comment: str = None, log=False, approval_required=True):
         with self.db as (conn, cursor):
             cursor.execute("""
                 INSERT INTO "research"
@@ -95,7 +83,7 @@ class ResearchesManager(AbstractDBManager):
             """, (research_name, research_comment, user_id, day_start, approval_required))
             research_id = cursor.fetchone()[0]
             conn.commit()
-        log and self.logger.log(f"Info : Created research #{research_id} '{research_name}' starting on {day_start} by '{user_name}'. Approval required: {approval_required}", research_id)
+        log and self.logger.log(f"Info : Created research #{research_id} '{research_name}' starting on {day_start} by user with id '{user_id}'. Approval required: {approval_required}", research_id)
         return research_id
 
     
