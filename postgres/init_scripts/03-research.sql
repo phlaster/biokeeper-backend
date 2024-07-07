@@ -22,7 +22,8 @@ CREATE TABLE "research" (
     day_start DATE NOT NULL,
     day_end DATE,
     n_samples INT NOT NULL DEFAULT 0,
-    comment TEXT
+    comment TEXT,
+    approval_required BOOLEAN NOT NULL DEFAULT TRUE
 );
 -- Autoupdating `updated_at`
 CREATE TRIGGER autoupdate_researches
