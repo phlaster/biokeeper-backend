@@ -12,6 +12,8 @@ router = APIRouter()
 
 @router.get('/samples')
 def get_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
+    # TODO: return not all information about sample, hide something.
+    # Is this endpoint really needed?
     return DBM.samples.get_all()
 
 @router.get('/samples/{sample_id}')
