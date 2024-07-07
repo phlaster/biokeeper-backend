@@ -3,13 +3,12 @@ from exceptions import NotFoundException
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from schemas import TokenPayload
-from db_manager import DBM
 from crypto import verify_jwt_token
 from exceptions import NoUserException
 import jwt
 
 
-external_token_url = "http://127.0.0.1:8000/token"
+external_token_url = "http://127.0.0.1:1337/token"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=external_token_url)
 
 NotEnoughPermissionsException = HTTPException(
@@ -41,6 +40,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Tok
         username: str = payload.get("username")
         if username is None:
             raise credentials_exception
+        from db_manager import DBM
         DBM.users.has(username)
     except jwt.ExpiredSignatureError:
         raise expired_exception
@@ -89,7 +89,7 @@ def validate_return_from_db(data,
                       search_param_value,
                       logger=None,
                       exception=NotFoundException):
-    key,value = data.items()[0]
+    key,value = list(data.items())[0]
     if not value:
         if logger:
             logger.log(f"Error: Can't find {key} using {search_param_name} with {search_param_value}.", 0)
