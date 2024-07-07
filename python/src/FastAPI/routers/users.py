@@ -4,7 +4,7 @@ from db_manager import DBM
 from fastapi import Body, Depends, status
 from typing import Annotated, Any
 from fastapi.responses import JSONResponse
-
+from exceptions import NoUserException, HTTPNotFoundException
 from schemas import TokenPayload
 from utils import get_current_user
 
@@ -19,46 +19,18 @@ def get_users(token_payload: Annotated[TokenPayload, Depends(get_current_user)])
     """
     return DBM.users.get_all()
 
-@router.get('/users/{user_name}')
-def get_user(user_name):
+@router.get('/users/{user_identifier}')
+def get_user_by_id(user_identifier, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     """
-    Returns user information for the specified user_name.
+    Returns user information for the specified user_id.
     """
-    return DBM.users.get_info(user_name)
-
-@router.get('/users/{user_name}/status')
-def get_user_status(user_name):
-    return DBM.users.status_of(user_name)
-
-@router.post('/users')
-def create_user(
-    payload : Any = Body(None)
-):
     try:
-        print(payload['user_name'])
-        print(payload['password'])
-        user_name = payload['user_name']
-        password = payload['password']
-    except:
-        pass
-    return DBM.users.new(user_name, password)
+        dbm_user = DBM.users.get_info_by_id(user_identifier)
+    except NoUserException:
+        raise HTTPNotFoundException(f'User {user_identifier} not found')
+    return dbm_user
 
-@router.get('/users/{user_name}/score')
-def get_user_score(user_name):
-    return DBM.users.get_info(user_name)['n_samples_collected']
+# @router.get('/users/{user_name}/score')
+# def get_user_score(user_name, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
+#     return DBM.users.get_info(user_name)['n_samples_collected']
 
-@router.get('/users/password_match/{user_name}/{password}')
-def check_password_match(user_name: str, password: str):
-    user_data = DBM.users.get_info(user_name)
-    if not user_data:
-            return JSONResponse(status_code=401, content={'success': False})
-    user_id = user_data['id']
-    if user_id == DBM.users.password_match(user_id, password):
-        return JSONResponse(status_code=200, content={
-            'success': True,
-            'user_id': user_id,
-            'user_name': user_data['name'],
-            'user_status': user_data['status']
-        })
-    return JSONResponse(status_code=401, content={'success': False})
-        
