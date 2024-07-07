@@ -73,7 +73,7 @@ def create_sample(
         raise HTTPForbiddenException(details=f'User {token_payload.id} does not own kit {dbm_kit["id"]}')
     
     if not dbm_kit['status'] == 'activated':
-        raise HTTPConflictException(details=f"Kit {dbm_kit["id"]} hasn't been activated")
+        raise HTTPConflictException(details=f'Kit {dbm_kit["id"]} hasn\'t been activated')
 
 
 
