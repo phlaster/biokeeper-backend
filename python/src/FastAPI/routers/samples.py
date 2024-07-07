@@ -3,7 +3,7 @@ from fastapi import Depends
 from fastapi.routing import APIRouter
 from db_manager import DBM
 from datetime import datetime
-from exceptions import HTTPNotFoundException, NoSampleException,HTTPForbiddenException
+from exceptions import HTTPNotFoundException, NoSampleException,HTTPForbiddenException,NoResearchException
 from schemas import TokenPayload
 from utils import get_current_user, is_admin, is_observer
 
@@ -35,6 +35,14 @@ def create_sample(
     user_comment: str = None,
     photo_hex: str = None
 ):
+    try:
+        dbm_research = DBM.researches.get_info(research_name)
+    except NoResearchException:
+        raise HTTPNotFoundException(details=f'Research {research_name} not found')
+    if dbm_research['approval_required']:
+        user_researches = DBM.users.get_user_participated_researches(token_payload.id)
+        if not dbm_research['id'] in user_researches:
+            raise HTTPForbiddenException(details=f'User {token_payload.id} does not participate in research {research_name}')
     return DBM.samples.new(bytes.fromhex(qr_hex), 
                            research_name, 
                            collected_at,
