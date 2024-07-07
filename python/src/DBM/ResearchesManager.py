@@ -138,3 +138,15 @@ class ResearchesManager(AbstractDBManager):
 
         log and self.logger.log(f"Info : Now research #{research_id} ends on {day_end}", research_id)
         return research_id
+    
+    def get_participants(self, identifier, log=False):
+        research_id = self.has(identifier)
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT user_id
+                FROM "user_research"
+                WHERE research_id = %s
+            """, (research_id,))
+            participants = cursor.fetchall()
+
+        return participants
