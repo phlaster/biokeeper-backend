@@ -1,7 +1,10 @@
 import asyncio
 import aio_pika
+import json
 
 from config import RABBITMQ_CORE_USER, RABBITMQ_CORE_PASS
+
+from db_manager import DBM
 
 async def start_consuming():
     # Create a connection to RabbitMQ
@@ -21,7 +24,8 @@ async def start_consuming():
             with open('/testfolder/file.txt', 'a') as file:
                 file.write('Message:')
                 file.write(message.body.decode() + '\n')
-            print(message.body)
+            message_data = json.loads(message.body.decode())
+            DBM.users.new(message_data['id'], message_data['username'])
 
     # Start consuming messages from the queue
     await queue.consume(callback)
