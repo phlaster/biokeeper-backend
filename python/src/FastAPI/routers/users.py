@@ -17,6 +17,7 @@ def get_users(token_payload: Annotated[TokenPayload, Depends(get_current_user)])
     Retrieves all users.
     Returns a dictionary containing information about all users.
     """
+    # TODO: return not all information about user, hide something.
     return DBM.users.get_all()
 
 @router.get('/users/{user_identifier}')
