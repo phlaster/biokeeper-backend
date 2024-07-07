@@ -31,6 +31,4 @@ def create_research(
     ):
     return DBM.researches.new(research_name, user_name, day_start)
 
-#- рудименты
-# начать делать проверку у юзера есть доступ смотреть инфу
 
