@@ -3,9 +3,9 @@ from fastapi import Depends
 from fastapi.routing import APIRouter
 from db_manager import DBM
 from datetime import date
-from exceptions import NoResearchException, HTTPNotFoundException
+from exceptions import HTTPConflictException, NoResearchException, HTTPNotFoundException
 from schemas import TokenPayload
-from utils import get_current_user
+from utils import get_admin, get_current_user
 
 router = APIRouter()
 
@@ -20,15 +20,30 @@ def get_research(research_identifier, token_payload: Annotated[TokenPayload, Dep
     except NoResearchException:
         raise HTTPNotFoundException(details=f'Research {research_identifier} not found')
     return dbm_research
-    
 
 @router.post('/researches')
 def create_research(
     research_name: str,
-    user_name: str,
     day_start: date,
-    token_payload: Annotated[TokenPayload, Depends(get_current_user)]
+    token_payload: Annotated[TokenPayload, Depends(get_admin)],
+    research_comment: str | None = None,
+    approval_required: bool = True
     ):
-    return DBM.researches.new(research_name, user_name, day_start)
+    
+    user_id = token_payload.user_id
+
+    try:
+        DBM.researches.has(research_name)
+    except NoResearchException:
+        pass
+    else:
+        raise HTTPConflictException(details=f'Research {research_name} already exists')
+
+    return DBM.researches.new(research_name=research_name, 
+                              user_id=user_id, 
+                              day_start=day_start, 
+                              research_comment=research_comment, 
+                              log=False, 
+                              approval_required=approval_required)
 
 
