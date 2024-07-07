@@ -6,8 +6,9 @@ from DBM.ResearchesManager import ResearchesManager
 from multimethod import multimethod, Union
 from geopy.geocoders import Nominatim
 import concurrent.futures
-
+from exceptions import NoSampleException, NoQrCodeException
 import datetime
+from utils import validate_return_from_db
 
 class SamplesManager(AbstractDBManager):
     def _get_closest_toponym(self, gps):
@@ -42,19 +43,30 @@ class SamplesManager(AbstractDBManager):
     @multimethod
     def has(self, sample_id: int, log=False):
         id = self._SELECT("id", "sample", "id", sample_id)
-        if not id:
-            return self.logger.log(f"Error: No such sample #{sample_id}.", 0) if log else 0
-        return id
+        return validate_return_from_db({"sample": id},
+                                       "sample_id",
+                                       sample_id,
+                                       self.logger if log else None,
+                                       NoSampleException)
 
     @multimethod
     def has(self, qr_unique_hex: str, log=False):
         qr_info = self.get_qr_info(qr_unique_hex)
-        if not qr_info:
-            return self.logger.log(f"Error: Wrong QR hex: '{qr_unique_hex}'", 0) if log else 0
+        qr_info=validate_return_from_db(
+            {"qr_info": qr_info},
+            "qr_unique_hex",
+            qr_unique_hex,
+            self.logger if log else None,
+            NoQrCodeException
+        )
         qr_id = qr_info["qr_id"]
         sample_id = self._SELECT("id", "sample", "qr_id", qr_id)
-        if not sample_id:
-            return self.logger.log(f"Error: No sample for QR #{qr_id}", 0) if log else 0
+        return validate_return_from_db({"sample": sample_id},
+                                       "qr_id",
+                                       qr_id,
+                                       self.logger if log else None,
+                                       NoSampleException
+                                       )
 
     @multimethod
     def status_of(self, sample_id: int, log=False):

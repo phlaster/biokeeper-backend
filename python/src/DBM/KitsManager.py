@@ -1,7 +1,10 @@
 from DBM.ADBM import AbstractDBManager
 from DBM.UsersManager import UsersManager
 import os
+from exceptions import NoKitException
 from multimethod import multimethod
+from utils import validate_return_from_db
+
 
 class KitsManager(AbstractDBManager):
     def _generate_qr_bytes(self, n: int, l: int = 10):
@@ -18,16 +21,20 @@ class KitsManager(AbstractDBManager):
     @multimethod
     def has(self, kit_id: int, log=False):
         id = self._SELECT("id", "kit", "id", kit_id)
-        if not id:
-            return self.logger.log(f"Error: No kit #{kit_id}.", 0) if log else 0
-        return id
+        return validate_return_from_db({"kit": id},
+                                       "kit_id",
+                                       kit_id,
+                                       self.logger if log else None,
+                                       NoKitException)
 
     @multimethod
     def has(self, unique_hex: str, log=False):
         id = self._SELECT("id", "kit", "unique_hex", unique_hex)
-        if not id:
-            return self.logger.log(f"Error: No kit with hex '{unique_hex}'.", 0) if log else 0
-        return id
+        return validate_return_from_db({"kit": id},
+                                       "unique_hex",
+                                       unique_hex,
+                                       self.logger if log else None,
+                                       NoKitException)
 
     def status_of(self, identifier, log=False):
         kit_id = self.has(identifier)

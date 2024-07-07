@@ -1,7 +1,9 @@
 from DBM.ADBM import AbstractDBManager
 from DBM.UsersManager import UsersManager
 import datetime
+from exceptions import NoResearchException
 from multimethod import multimethod
+from utils import validate_return_from_db
 
 class ResearchesManager(AbstractDBManager):
     def count(self, status:str="all"):
@@ -14,16 +16,20 @@ class ResearchesManager(AbstractDBManager):
     @multimethod
     def has(self, research_name: str, log=False):
         id = self._SELECT("id", "research", "name", research_name)
-        if not id:
-            return self.logger.log(f"Error: No such research '{research_name}'.", 0) if log else 0
-        return id
+        return validate_return_from_db({"research": id},
+                                       "research_name",
+                                       research_name,
+                                       self.logger if log else None,
+                                       NoResearchException)
     
     @multimethod
     def has(self, research_id: int, log=False):
         id = self._SELECT("id", "research", "id", research_id)
-        if not id:
-            return self.logger.log(f"Error: No such research #{research_id}.", 0) if log else 0
-        return id
+        return validate_return_from_db({"research": id},
+                                       "research_id",
+                                       research_id,
+                                       self.logger if log else None,
+                                       NoResearchException)
 
     
     def status_of(self, identifier, log=False):
