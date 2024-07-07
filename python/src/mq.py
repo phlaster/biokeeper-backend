@@ -21,9 +21,6 @@ async def start_consuming():
     # Define a callback function to handle incoming messages
     async def callback(message):
         async with message.process():
-            with open('/testfolder/file.txt', 'a') as file:
-                file.write('Message:')
-                file.write(message.body.decode() + '\n')
             message_data = json.loads(message.body.decode())
             DBM.users.new(message_data['id'], message_data['username'])
 
@@ -33,6 +30,3 @@ async def start_consuming():
     # Wait for incoming messages
     while True:
         await asyncio.sleep(1)
-
-
-# asyncio.run(start_consuming())
