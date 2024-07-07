@@ -50,8 +50,8 @@ class UsersManager(AbstractDBManager):
         user_id = self.has(identifier, log=log)
         if not user_id:
             raise UserNotFoundException
-        # make request to http://auth_backend/users/{user_id}/status and get name from response
-        request_url = f"http://auth_backend/users/{user_id}/status"
+        # make request to http://auth_backend:8000/users/{user_id}/role and get name from response
+        request_url = f"http://auth_backend:8000/users/{user_id}/role"
         response = requests.get(request_url)
         user_status = response.json()
         status_name = user_status.get('name')
@@ -65,10 +65,10 @@ class UsersManager(AbstractDBManager):
         if not user_id:
             raise UserNotFoundException
 
-        # make request to http://auth_backend/users/{user_id}/status and get name from response
-        request_url = f"http://auth_backend/users/{user_id}/created_at"
+        # make request to http://auth_backend:8000/users/{user_id}/status and get name from response
+        request_url = f"http://auth_backend:8000/users/{user_id}/created_at"
         response = requests.get(request_url)
-        created_at = response.json().get('created_at').astimezone().isoformat()
+        created_at = response.json().get('created_at')
         return created_at
     def get_info(self, identifier):
         # TODO:
