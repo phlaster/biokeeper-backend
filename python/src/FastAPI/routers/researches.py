@@ -31,14 +31,14 @@ def create_research(
     approval_required: bool = True
     ):
     
-    user_id = token_payload.user_id
+    user_id = token_payload.id
 
     try:
         DBM.researches.has(research_name)
     except NoResearchException:
         pass
     else:
-        raise HTTPConflictException(details=f'Research {research_name} already exists')
+        raise HTTPConflictException(detail=f'Research {research_name} already exists')
 
     return DBM.researches.new(research_name=research_name, 
                               user_id=user_id, 
