@@ -3,7 +3,7 @@ from fastapi import Depends, Body, status
 from fastapi.routing import APIRouter
 from db_manager import DBM
 from exceptions import NoKitException, HTTPNotFoundException,HTTPForbiddenException,HTTPConflictException, NoUserException
-from schemas.common import Identifier, TokenPayload
+from schemas.common import TokenPayload
 from schemas.kits import CreateKitRequest, KitInfo, KitRequest, SendKitRequest
 from utils import get_admin, get_current_user, get_volunteer_or_admin
 from fastapi.responses import JSONResponse, Response
