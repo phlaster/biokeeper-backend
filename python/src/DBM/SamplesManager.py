@@ -83,6 +83,7 @@ class SamplesManager(AbstractDBManager):
             kit_data = cursor.fetchone()
 
             if kit_data:
+                sample_info_dict['id'] = sample_id 
                 sample_info_dict['research_id'] = kit_data[0]
                 sample_info_dict['qr_id'] = kit_data[1]
                 sample_info_dict['status'] = self.status_of(sample_id)
