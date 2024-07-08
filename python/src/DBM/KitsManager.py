@@ -111,10 +111,10 @@ class KitsManager(AbstractDBManager):
         
         with self.db as (conn, cursor):
             cursor.execute("""
-                INSERT INTO "kit" (unique_hex, n_qrs)
-                VALUES (%s, %s)
+                INSERT INTO "kit" (unique_hex, n_qrs, creator_id)
+                VALUES (%s, %s, %s)
                 RETURNING id
-            """, (kit_unique_hex, n_qrs))
+            """, (kit_unique_hex, n_qrs, creator_id))
             kit_id = cursor.fetchone()[0]
             for qr_unique_code in qr_unique_hexes:
                 cursor.execute("""
