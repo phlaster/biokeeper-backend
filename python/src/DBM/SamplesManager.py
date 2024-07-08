@@ -3,6 +3,8 @@ from DBM.UsersManager import UsersManager
 from DBM.KitsManager import KitsManager
 from DBM.ResearchesManager import ResearchesManager
 
+from schemas.samples import GpsModel
+
 from utils import get_closest_toponym 
 from multimethod import multimethod, Union
 import concurrent.futures
@@ -108,17 +110,15 @@ class SamplesManager(AbstractDBManager):
         research_id: int,
         owner_id: int,
         collected_at: datetime.datetime,
-        gps: str,
+        gps_model: GpsModel,
         weather: str | None = None,
         user_comment: str | None = None,
         photo_hex_string: str | None = None,
         log: bool = False
     ):
-        gps = tuple([float(x) for x in gps.split(',')])
-        if (abs(gps[0]) > 90.0 or abs(gps[1]) > 180.0):
-            return self.logger.log(f"Error: GPS coordinates {gps} are out of bounds.", 0) if log else 0
+        gps = f"{gps_model.latitude},{gps_model.longitude}"
         
-        closest_toponym = ', '.join(get_closest_toponym(gps).split(", ")[:-4])
+        closest_toponym = ', '.join(get_closest_toponym(gps_model.latitude, gps_model.longitude).split(",")[:-4])
 
         with self.db as (conn, cursor):
             cursor.execute("""

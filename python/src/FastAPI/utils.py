@@ -2,7 +2,7 @@ from typing import Annotated
 from exceptions import NotFoundException
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from schemas import TokenPayload
+from schemas.common import TokenPayload
 from crypto import verify_jwt_token
 from exceptions import NoUserException, HTTPNotEnoughPermissionsException
 import jwt
@@ -95,10 +95,10 @@ def validate_return_from_db(data,
 
 
 from geopy.geocoders import Nominatim
-def get_closest_toponym(gps):
+def get_closest_toponym(lat, lon):
     geolocator = Nominatim(user_agent="Biokeeper")
     try:
-        location = geolocator.reverse(f"{gps[0]}, {gps[1]}")
+        location = geolocator.reverse(f"{lat}, {lon}")
         return location.raw['display_name']
     except Exception as e:
-        return str(gps)
+        return f"{lat},{lon}"

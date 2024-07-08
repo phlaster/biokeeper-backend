@@ -1,0 +1,51 @@
+from pydantic import BaseModel, field_validator
+from datetime import datetime, date
+
+from schemas.common import validate_identifier
+
+class ResearchBase(BaseModel):
+    id: int
+    name: str
+
+class ResearchResponse(ResearchBase):
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    created_by: int
+    day_start: datetime
+    day_end: datetime
+    comment: str | None
+    approval_required: bool
+    n_samples: int
+
+class ResearchRequest(BaseModel):
+    research_identifier : int | str
+
+    @field_validator('research_identifier', mode="before")
+    def validate_research_identifier(cls, v):
+        return validate_identifier(v, 'research_identifier must be either an integer or a string')
+    
+class GetResearchRequest(ResearchRequest):
+    pass
+
+class SendResearchParticipantRequest(ResearchRequest):
+    pass
+
+class CandidateRequest(BaseModel):
+    candidate_identifier : int | str
+
+    @field_validator('candidate_identifier', mode="before")
+    def validate_candidate_identifier(cls, v):
+        return validate_identifier(v, 'candidate_identifier must be either an integer or a string')
+
+class ApproveResearchRequest(ResearchRequest, CandidateRequest):
+    pass
+
+class DeclineResearchRequest(ResearchRequest, CandidateRequest):
+    pass
+
+class CreateResearchRequest(BaseModel):
+    research_name: str
+    day_start: date
+    research_comment: str | None = None,
+    approval_required: bool = True

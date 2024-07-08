@@ -5,30 +5,26 @@ from fastapi import Body, Depends, status
 from typing import Annotated, Any
 from fastapi.responses import JSONResponse
 from exceptions import NoUserException, HTTPNotFoundException
-from schemas import Identifier, TokenPayload
+from schemas.common import TokenPayload
+from schemas.users import GetUserRequest, UserResponse
 from utils import get_current_user
-
 
 router = APIRouter()
 
-@router.get('/users')
+@router.get('/users', response_model=list[UserResponse])
 def get_users(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    """
-    Retrieves all users.
-    Returns a dictionary containing information about all users.
-    """
-    # TODO: return not all information about user, hide something.
-    return DBM.users.get_all()
+    users = content=DBM.users.get_all()
+    return JSONResponse(status_code=status.HTTP_200_OK, content=users)
 
-@router.get('/users/{user_identifier}')
-def get_user_by_identifier(user_identifier: str, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    validated_user_identifier = Identifier(identifier=user_identifier).identifier
+@router.get('/users/{user_identifier}', response_model=UserResponse)
+def get_user_by_identifier(get_user_request: GetUserRequest, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
+    user_identifier = get_user_request.user_identifier
     """
     Returns user information for the specified user_id.
     """
     try:
-        dbm_user = DBM.users.get_info(validated_user_identifier)
+        dbm_user = DBM.users.get_info(user_identifier)
     except NoUserException:
-        raise HTTPNotFoundException(detail=f'User {validated_user_identifier} not found')
-    return dbm_user
+        raise HTTPNotFoundException(detail=f'User {user_identifier} not found')
+    return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_user)
 
