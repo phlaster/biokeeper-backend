@@ -91,6 +91,7 @@ def validate_return_from_db(data,
                       exception=NotFoundException):
     key,value = list(data.items())[0]
     if not value:
+        print(f"Error: Can't find {key} using {search_param_name} with {search_param_value}.")
         if logger:
             logger.log(f"Error: Can't find {key} using {search_param_name} with {search_param_value}.", 0)
         raise exception
