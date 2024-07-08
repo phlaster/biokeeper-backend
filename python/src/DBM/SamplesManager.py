@@ -68,9 +68,9 @@ class SamplesManager(AbstractDBManager):
         return self._status_getter("sample", sample_id)
 
     @multimethod
-    def get_info(self, identifier, log=False):
+    def get_info(self, sample_id: int, log=False):
         sample_info_dict = {}
-        sample_id = self.has(identifier, log=log)
+        sample_id = self.has(sample_id, log=log)
         if not sample_id:
             return self.logger.log(f"Error: Sample #{sample_id} does not exist.", sample_info_dict) if log else sample_info_dict
 
@@ -102,17 +102,18 @@ class SamplesManager(AbstractDBManager):
     def get_all(self):
         return self._all_getter("id", "sample")
 
-    @multimethod
     def new(self,
         qr_id: int,
-        research_id: str,
+        research_id: int,
         owner_id: int,
         collected_at: datetime.datetime,
-        gps: tuple[float, float],
+        gps: str,
+        weather: str | None = None,
+        user_comment: str | None = None,
         photo_hex_string: str | None = None,
-        log=False
+        log: bool = False
     ):
-
+        gps = tuple([float(x) for x in gps.split(',')])
         if (abs(gps[0]) > 90.0 or abs(gps[1]) > 180.0):
             return self.logger.log(f"Error: GPS coordinates {gps} are out of bounds.", 0) if log else 0
         
@@ -121,10 +122,10 @@ class SamplesManager(AbstractDBManager):
         with self.db as (conn, cursor):
             cursor.execute("""
                 INSERT INTO "sample"
-                (research_id, owner_id, qr_id, collected_at, gps)
-                VALUES (%s, %s, %s, %s, POINT(%s))
+                (research_id, owner_id, qr_id, collected_at, gps, weather, comment)
+                VALUES (%s, %s, %s, %s, POINT(%s), %s, %s)
                 RETURNING id
-            """, (research_id, owner_id, qr_id, collected_at, str(gps))
+            """, (research_id, owner_id, qr_id, collected_at, str(gps), weather, user_comment)
             )
             sample_id = cursor.fetchone()[0]
 
