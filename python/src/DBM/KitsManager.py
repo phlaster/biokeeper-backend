@@ -144,3 +144,20 @@ class KitsManager(AbstractDBManager):
             conn.commit()
         log and self.logger.log(f"Info : Owner of Kit #{kit_id} changed to user #{user_id}", kit_id)
         return kit_id
+
+    def send_kit(self, kit_id: int, new_owner_id: int, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""UPDATE "kit" SET owner_id = %s WHERE id = %s""", (new_owner_id, kit_id))
+            conn.commit()
+        with self.db as (conn, cursor):
+            cursor.execute("""UPDATE "kit" SET status = 2 WHERE kit_id = %s""", (kit_id,))
+            conn.commit()
+        log and self.logger.log(f"Info : Owner of Kit #{kit_id} changed to user #{new_owner_id}", kit_id)
+        return kit_id
+
+    def activate(self, kit_id: int, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""UPDATE "kit" SET status = 3 WHERE id = %s""", (kit_id,))
+            conn.commit()
+        log and self.logger.log(f"Info : Kit #{kit_id} activated", kit_id)
+        return kit_id
