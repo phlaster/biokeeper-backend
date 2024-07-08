@@ -120,7 +120,7 @@ class UsersManager(AbstractDBManager):
                 FROM "user_research"
                 WHERE user_id = %s
             """, (user_id,))
-            researches = cursor.fetchall()
+            researches = cursor.fetchall()[0]
 
         return researches
 

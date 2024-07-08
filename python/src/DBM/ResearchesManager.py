@@ -136,6 +136,6 @@ class ResearchesManager(AbstractDBManager):
                 FROM "user_research"
                 WHERE research_id = %s
             """, (research_id,))
-            participants = cursor.fetchall()
+            participants = cursor.fetchall()[0]
 
         return participants
