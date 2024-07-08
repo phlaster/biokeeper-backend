@@ -3,10 +3,8 @@ from DBM.ADBM import AbstractDBManager
 import hashlib
 import os
 from multimethod import multimethod
-
-
-class UserNotFoundException(Exception):
-    pass
+from exceptions import NoUserException
+from utils import validate_return_from_db
 
 class UsersManager(AbstractDBManager):
     @multimethod
@@ -32,16 +30,21 @@ class UsersManager(AbstractDBManager):
     @multimethod
     def has(self, user_name: str, log=False):
         id = self._SELECT("id", "user", "name", user_name)
-        if not id:
-            return self.logger.log(f"Error: No such user '{user_name}'.", 0) if log else 0
-        return id
+        return validate_return_from_db({"user": id},
+                                       "user_name",
+                                       user_name,
+                                       self.logger if log else None,
+                                       NoUserException)
     
     @multimethod
     def has(self, user_id: int, log=False):
         id = self._SELECT("id", "user", "id", user_id)
-        if not id:
-            return self.logger.log(f"Error: No such user #{user_id}.", 0) if log else 0
-        return id
+        return validate_return_from_db({"user": id},
+                                       "user_id",
+                                       user_id,
+                                       self.logger if log else None,
+                                       NoUserException)
+    
 
     def status_of(self, identifier, log=False):
         # TODO:
@@ -108,7 +111,33 @@ class UsersManager(AbstractDBManager):
             conn.commit()
             log and self.logger.log(f"Info : User #{id} '{user_name}' has been added to the system", id)
         return id
+    
+    def get_user_participated_researches(self, identifier, log=False):
+        user_id = self.has(identifier)
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT research_id
+                FROM "user_research"
+                WHERE user_id = %s
+            """, (user_id,))
+            researches = cursor.fetchall()
 
+        if not researches:
+            return []
+
+        return researches[0]
+    
+    # def get_user_qrs(self, identifier, log=False):
+    #     user_id = self.has(identifier)
+    #     with self.db as (conn, cursor):
+    #         cursor.execute("""
+    #             SELECT id
+    #             FROM "qr"
+    #             WHERE user_id = %s
+    #         """, (user_id,))
+    #         qrs = cursor.fetchall()[0]
+
+    #     return qrs
 
     # @multimethod
     # def rename(self, user_identifier, new_user_name: str, log=False):

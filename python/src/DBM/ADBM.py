@@ -3,6 +3,9 @@ from multimethod import multimethod
 from DBM.DBConnection import DBConnection
 from Logger import Logger
 
+from utils import validate_return_from_db
+from exceptions import NoQrCodeException
+
 class AbstractDBManager(ABC):
     def __init__(self, logdata, logfile="logs.log"):
         self.logdata = logdata
@@ -149,10 +152,18 @@ class AbstractDBManager(ABC):
                 SELECT id, is_used, kit_id
                 FROM "qr"
                 WHERE unique_hex = %s
-            """, (qr_hex,))
+                """, (qr_hex,)
+            )
             result = cursor.fetchone()
-        return {
-            'id': int(result[0]),
-            'is_used': bool(result[1]),
-            'kit_id': int(result[2])
-        } if result else {}
+            result = {
+                    'id': int(result[0]),
+                    'is_used': bool(result[1]),
+                    'kit_id': int(result[2])
+                } if result else {}
+            
+            result = validate_return_from_db({"qr": result},
+                                             "qr_hex",
+                                             qr_hex,
+                                             self.logger,
+                                             NoQrCodeException)
+        return result

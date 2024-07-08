@@ -16,7 +16,9 @@ CREATE TABLE "kit" (
     status INT NOT NULL DEFAULT 1,
     FOREIGN KEY (status) REFERENCES kit_statuses(id),
     n_qrs INT NOT NULL,
+    creator_id INT NOT NULL,
     owner_id INT,
+    FOREIGN KEY (creator_id) REFERENCES "user"(id),
     FOREIGN KEY (owner_id) REFERENCES "user"(id)
 );
 
