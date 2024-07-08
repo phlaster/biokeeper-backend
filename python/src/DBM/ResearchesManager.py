@@ -128,8 +128,7 @@ class ResearchesManager(AbstractDBManager):
         log and self.logger.log(f"Info : Now research #{research_id} ends on {day_end}", research_id)
         return research_id
     
-    def get_participants(self, identifier, log=False):
-        research_id = self.has(identifier)
+    def get_participants(self, research_id, log=False):
         with self.db as (conn, cursor):
             cursor.execute("""
                 SELECT user_id
@@ -139,3 +138,46 @@ class ResearchesManager(AbstractDBManager):
             participants = cursor.fetchall()[0]
 
         return participants
+
+    def get_candidates(self, research_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT user_id
+                FROM "user_research_pending"
+                WHERE research_id = %s
+            """, (research_id,))
+            candidates = cursor.fetchall()[0]
+
+        return candidates
+
+    def send_request(self, research_id, user_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                INSERT OR IGNORE INTO "user_research_pending"
+                (research_id, user_id)
+                VALUES (%s, %s)
+            """, (research_id, user_id))
+            conn.commit()
+
+    def approve_request(self, research_id, user_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                DELETE FROM "user_research_pending"
+                WHERE research_id = %s AND user_id = %s
+            """, (research_id, user_id))
+
+            cursor.execute("""
+                INSERT OR IGNORE INTO "user_research"
+                (research_id, user_id)
+                VALUES (%s, %s)
+            """, (research_id, user_id))
+
+            conn.commit()
+
+    def decline_request(self, research_id, user_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                DELETE FROM "user_research_pending"
+                WHERE research_id = %s AND user_id = %s
+            """, (research_id, user_id))
+            conn.commit()

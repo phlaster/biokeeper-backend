@@ -2,20 +2,16 @@ from typing import Annotated
 from exceptions import NotFoundException
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from schemas import TokenPayload
+from schemas.common import TokenPayload
 from crypto import verify_jwt_token
-from exceptions import NoUserException
+from exceptions import NoUserException, HTTPNotEnoughPermissionsException
 import jwt
 
 
 external_token_url = "http://127.0.0.1:1337/token"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=external_token_url)
 
-NotEnoughPermissionsException = HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Not enough permissions",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> TokenPayload:
     credentials_exception = HTTPException(
@@ -66,22 +62,22 @@ def is_volunteer(token: Annotated[TokenPayload, Depends(get_current_user)]):
 
 async def get_admin(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
     if not is_admin(token):
-        raise NotEnoughPermissionsException
+        raise HTTPNotEnoughPermissionsException(detail='Not enough permissions. Only admins can perform this action.')
     return token
 
 async def get_volunteer(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
     if not is_volunteer(token):
-        raise NotEnoughPermissionsException
+        raise HTTPNotEnoughPermissionsException(detail='Not enough permissions. Only volunteers can perform this action.')
     return token
 
 async def get_volunteer_or_admin(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
     if not is_admin(token) and not is_volunteer(token):
-        raise NotEnoughPermissionsException
+        raise HTTPNotEnoughPermissionsException(detail='Not enough permissions. Only admins and volunteers can perform this action.')
     return token
 
 async def get_observer(token: Annotated[TokenPayload, Depends(get_current_user)]) -> TokenPayload:
     if not is_observer(token):
-        raise NotEnoughPermissionsException
+        raise HTTPNotEnoughPermissionsException(detail='Not enough permissions. Only observers can perform this action.')
     return token
 
 def validate_return_from_db(data,
@@ -94,15 +90,15 @@ def validate_return_from_db(data,
         print(f"Error: Can't find {key} using {search_param_name} with {search_param_value}.")
         if logger:
             logger.log(f"Error: Can't find {key} using {search_param_name} with {search_param_value}.", 0)
-        raise exception
+        raise exception(f"Can't find {key} using {search_param_name} with {search_param_value}.")
     return value
 
 
 from geopy.geocoders import Nominatim
-def get_closest_toponym(gps):
+def get_closest_toponym(lat, lon):
     geolocator = Nominatim(user_agent="Biokeeper")
     try:
-        location = geolocator.reverse(f"{gps[0]}, {gps[1]}")
+        location = geolocator.reverse(f"{lat}, {lon}")
         return location.raw['display_name']
     except Exception as e:
-        return str(gps)
+        return f"{lat},{lon}"
