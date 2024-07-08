@@ -66,7 +66,7 @@ class KitsManager(AbstractDBManager):
 
         with self.db as (conn, cursor):
             cursor.execute("""
-                SELECT unique_hex, created_at, updated_at, status, owner_id
+                SELECT unique_hex, created_at, updated_at, status, owner_id, creator_id
                 FROM "kit"
                 WHERE id = %s
             """, (kit_id,))
@@ -78,7 +78,8 @@ class KitsManager(AbstractDBManager):
                 kit_info_dict['created_at'] = kit_data[1].astimezone().isoformat()
                 kit_info_dict['updated_at'] = kit_data[2].astimezone().isoformat()
                 kit_info_dict['status'] = self.status_of(kit_id)
-
+                kit_info_dict['creator_id'] = kit_data[5]
+                kit_info_dict['owner_id'] = kit_data[4]
                 if kit_data[4]:  # Check if user_id is not None
                     cursor.execute("""
                         SELECT id, name
@@ -101,7 +102,7 @@ class KitsManager(AbstractDBManager):
         return self._all_getter("id", "kit")
 
     @multimethod
-    def new(self, n_qrs: int, log=False):
+    def new(self, n_qrs: int, creator_id: int, log=False):
         if n_qrs > 50:
             self.logger.log(f"Info : No more than 50 QRs in one kit!")
             n_qrs = 50
@@ -150,7 +151,7 @@ class KitsManager(AbstractDBManager):
             cursor.execute("""UPDATE "kit" SET owner_id = %s WHERE id = %s""", (new_owner_id, kit_id))
             conn.commit()
         with self.db as (conn, cursor):
-            cursor.execute("""UPDATE "kit" SET status = 2 WHERE kit_id = %s""", (kit_id,))
+            cursor.execute("""UPDATE "kit" SET status = 2 WHERE id = %s""", (kit_id,))
             conn.commit()
         log and self.logger.log(f"Info : Owner of Kit #{kit_id} changed to user #{new_owner_id}", kit_id)
         return kit_id
