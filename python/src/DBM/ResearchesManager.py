@@ -135,7 +135,11 @@ class ResearchesManager(AbstractDBManager):
                 FROM "user_research"
                 WHERE research_id = %s
             """, (research_id,))
-            participants = cursor.fetchall()[0]
+            participants = cursor.fetchall()
+            if participants:
+                participants = participants[0]
+            else:
+                participants = []
 
         return participants
 
@@ -146,14 +150,18 @@ class ResearchesManager(AbstractDBManager):
                 FROM "user_research_pending"
                 WHERE research_id = %s
             """, (research_id,))
-            candidates = cursor.fetchall()[0]
+            candidates = cursor.fetchall()
+            if candidates:
+                candidates = candidates[0]
+            else:
+                candidates = []
 
         return candidates
 
     def send_request(self, research_id, user_id, log=False):
         with self.db as (conn, cursor):
             cursor.execute("""
-                INSERT OR IGNORE INTO "user_research_pending"
+                INSERT INTO "user_research_pending"
                 (research_id, user_id)
                 VALUES (%s, %s)
             """, (research_id, user_id))
@@ -167,7 +175,7 @@ class ResearchesManager(AbstractDBManager):
             """, (research_id, user_id))
 
             cursor.execute("""
-                INSERT OR IGNORE INTO "user_research"
+                INSERT INTO "user_research"
                 (research_id, user_id)
                 VALUES (%s, %s)
             """, (research_id, user_id))
@@ -181,3 +189,19 @@ class ResearchesManager(AbstractDBManager):
                 WHERE research_id = %s AND user_id = %s
             """, (research_id, user_id))
             conn.commit()
+
+    def get_researches_by_user_identifier(self, user_identifier):
+
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT research_id
+                FROM "user_research"
+                WHERE user_id = %s
+            """, (user_identifier,))
+            researches = cursor.fetchall()
+            if researches:
+                researches = researches[0]
+            else:
+                researches = []
+            researches = [{'research_id': research_id} for research_id in researches]
+        return researches

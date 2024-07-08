@@ -120,9 +120,24 @@ class UsersManager(AbstractDBManager):
                 FROM "user_research"
                 WHERE user_id = %s
             """, (user_id,))
-            researches = cursor.fetchall()[0]
+            researches = cursor.fetchall()
 
-        return researches
+        if not researches:
+            return []
+
+        return researches[0]
+    
+    # def get_user_qrs(self, identifier, log=False):
+    #     user_id = self.has(identifier)
+    #     with self.db as (conn, cursor):
+    #         cursor.execute("""
+    #             SELECT id
+    #             FROM "qr"
+    #             WHERE user_id = %s
+    #         """, (user_id,))
+    #         qrs = cursor.fetchall()[0]
+
+    #     return qrs
 
     # @multimethod
     # def rename(self, user_identifier, new_user_name: str, log=False):

@@ -4,33 +4,38 @@ from fastapi.routing import APIRouter
 from db_manager import DBM
 from exceptions import NoKitException, HTTPNotFoundException,HTTPForbiddenException,HTTPConflictException, NoUserException
 from schemas.common import TokenPayload
-from schemas.kits import CreateKitRequest, KitInfo, KitRequest, SendKitRequest
-from utils import get_admin, get_current_user, get_volunteer_or_admin
+from schemas.kits import CreateKitRequest, KitInfo, KitRequest, MyKit, SendKitRequest
+from utils import get_admin, get_current_user, get_volunteer, get_volunteer_or_admin
 from fastapi.responses import JSONResponse, Response
 from schemas.common import TokenPayload
 from utils import get_current_user
 
-router = APIRouter()
+from dependencies.identifiers_validators import kit_identifier_validator_dependency
+
+router = APIRouter(tags=['kits'])
 
 @router.get('/kits', response_model=list[KitInfo])
-def get_kits(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    return JSONResponse(status_code=status.HTTP_200_OK, content=DBM.kits.get_all())
+def get_kits(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
+    all_kits = list(DBM.kits.get_all().values())
+    return JSONResponse(status_code=status.HTTP_200_OK, content=all_kits)
 
 @router.get('/kits/{kit_identifier}', response_model=KitInfo)
-def get_kit(kit_request: KitRequest, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    kit_identifier = kit_request.kit_identifier
+def get_kit(kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)], 
+            token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]):
     try:
         dbm_kit = DBM.kits.get_info(kit_identifier)
     except NoKitException:
         raise HTTPNotFoundException(detail=f'Kit {kit_identifier} not found')
+    if token_payload.id != dbm_kit['owner_id']:
+        raise HTTPForbiddenException(detail=f'Kit {kit_identifier} is not owned by user {token_payload.id}')
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_kit)
 
 @router.put('/kits/{kit_identifier}/send')
 def update_owner(
     token_payload: Annotated[TokenPayload, Depends(get_admin)],
+    kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)],
     send_kit_request: SendKitRequest
     ):
-    kit_identifier = send_kit_request.kit_identifier
     new_owner_identifier = send_kit_request.new_owner_identifier
     try:
         kit_info = DBM.kits.get_info(kit_identifier)
@@ -61,10 +66,9 @@ def update_owner(
     
 @router.put('/kits/{kit_identifier}/activate')
 def activate_kit(
-    kit_request: KitRequest,
+    kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)],
     token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]
     ):
-    kit_identifier = kit_request.kit_identifier
     try:
         kit_info = DBM.kits.get_info(kit_identifier)
     except NoKitException:

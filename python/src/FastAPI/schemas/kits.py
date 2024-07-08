@@ -19,6 +19,9 @@ class KitInfo(BaseModel):
     owner: UserBase | None
     qrs: list[QR]
 
+class MyKit(BaseModel):
+    id: int
+
 class KitRequest(BaseModel):
     kit_identifier : int | str
 
@@ -27,7 +30,7 @@ class KitRequest(BaseModel):
         return validate_identifier(v, 'kit_identifier must be either an integer or a string')
 
 
-class SendKitRequest(KitRequest):
+class SendKitRequest(BaseModel):
     new_owner_identifier: int | str
 
     @field_validator('new_owner_identifier', mode="before")

@@ -12,12 +12,12 @@ class TokenPayload(BaseModel):
     role : Role
     exp: datetime.datetime
 
-def validate_identifier(v, error_message):
+def validate_identifier(v, message=None):
     if isinstance(v, int):
         return v
     elif isinstance(v, str):
         if v.isdigit():
             return int(v)
         else:
-            raise ValidationError(error_message)
-    raise ValidationError(error_message)
+            return v
+    raise ValidationError(message)

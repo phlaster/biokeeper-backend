@@ -146,3 +146,19 @@ class KitsManager(AbstractDBManager):
             conn.commit()
         log and self.logger.log(f"Info : Kit #{kit_id} activated", kit_id)
         return kit_id
+    
+
+    def get_kits_by_user_identifier(self, user_identifier):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT id
+                FROM "kit"
+                WHERE owner_id = %s
+            """, (user_identifier,))
+            kits = cursor.fetchall()
+            if kits:
+                kits = kits[0]
+            else:
+                kits = []
+            kits = [{'kit_id': kit_id} for kit_id in kits]
+        return kits

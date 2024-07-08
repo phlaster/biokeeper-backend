@@ -6,13 +6,13 @@ class GpsModel(BaseModel):
     latitude: float
     longitude: float
 
-    @field_validator('latitude', mode="before")
+    @field_validator('latitude', mode="after")
     def validate_latitude(cls, v):
         if v < -90 or v > 90:
             raise ValueError('Latitudemust be between -90 and 90')
         return v
 
-    @field_validator('longitude',  mode="before")
+    @field_validator('longitude',  mode="after")
     def validate_longitude(cls, v):
         if v < -180 or v > 180:
             raise ValueError('Longitude must be between -180 and 180')
@@ -42,9 +42,12 @@ class GetSampleRequest(BaseModel):
 
 class CreateSampleRequest(BaseModel):
     research_id: int
-    qr_hex: int
+    qr_hex: str
     collected_at: datetime
     gps: GpsModel
-    weather: bool
-    user_comment: str | None
-    photo_hex_string: str | None
+    weather: bool | None = None
+    user_comment: str | None = None
+    photo_hex_string: str | None = None
+
+class MySample(BaseModel):
+    sample_id: int

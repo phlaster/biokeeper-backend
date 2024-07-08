@@ -82,23 +82,23 @@ class SamplesManager(AbstractDBManager):
                 FROM "sample"
                 WHERE id = %s
             """, (sample_id,))
-            kit_data = cursor.fetchone()
+            sample_data = cursor.fetchone()
 
-            if kit_data:
+            if sample_data:
                 sample_info_dict['id'] = sample_id 
-                sample_info_dict['research_id'] = kit_data[0]
-                sample_info_dict['qr_id'] = kit_data[1]
+                sample_info_dict['research_id'] = sample_data[0]
+                sample_info_dict['qr_id'] = sample_data[1]
                 sample_info_dict['status'] = self.status_of(sample_id)
-                sample_info_dict['owner_id'] = kit_data[2]
-                sample_info_dict['collected_at'] = kit_data[3].astimezone().isoformat()
-                sample_info_dict['created_at'] = kit_data[4].astimezone().isoformat()
-                sample_info_dict['updated_at'] = kit_data[5].astimezone().isoformat() 
-                sample_info_dict['sent_to_lab_at'] = kit_data[6].astimezone().isoformat() if kit_data[6] else None
-                sample_info_dict['delivered_to_lab_at'] = kit_data[7].astimezone().isoformat() if kit_data[7] else None
-                sample_info_dict['gps'] = kit_data[8] #",".join(kit_data[8][1:-1].split(", "))
-                sample_info_dict['weather'] = True if kit_data[9] else None
-                sample_info_dict['comment'] = kit_data[10]
-                sample_info_dict['photo'] = True if kit_data[11] else None
+                sample_info_dict['owner_id'] = sample_data[2]
+                sample_info_dict['collected_at'] = sample_data[3].astimezone().isoformat()
+                sample_info_dict['created_at'] = sample_data[4].astimezone().isoformat()
+                sample_info_dict['updated_at'] = sample_data[5].astimezone().isoformat() 
+                sample_info_dict['sent_to_lab_at'] = sample_data[6].astimezone().isoformat() if sample_data[6] else None
+                sample_info_dict['delivered_to_lab_at'] = sample_data[7].astimezone().isoformat() if sample_data[7] else None
+                sample_info_dict['gps'] = sample_data[8] #",".join(sample_data[8][1:-1].split(", "))
+                sample_info_dict['weather'] = True if sample_data[9] else None
+                sample_info_dict['comment'] = sample_data[10]
+                sample_info_dict['photo'] = True if sample_data[11] else None
         return sample_info_dict
 
     
@@ -110,15 +110,15 @@ class SamplesManager(AbstractDBManager):
         research_id: int,
         owner_id: int,
         collected_at: datetime.datetime,
-        gps_model: GpsModel,
+        gps: GpsModel,
         weather: str | None = None,
         user_comment: str | None = None,
         photo_hex_string: str | None = None,
         log: bool = False
     ):
-        gps = f"{gps_model.latitude},{gps_model.longitude}"
+        gps_string = f"{gps.latitude},{gps.longitude}"
         
-        closest_toponym = ', '.join(get_closest_toponym(gps_model.latitude, gps_model.longitude).split(",")[:-4])
+        closest_toponym = ', '.join(get_closest_toponym(gps.latitude, gps.longitude).split(",")[:-4])
 
         with self.db as (conn, cursor):
             cursor.execute("""
@@ -126,7 +126,7 @@ class SamplesManager(AbstractDBManager):
                 (research_id, owner_id, qr_id, collected_at, gps, weather, comment)
                 VALUES (%s, %s, %s, %s, POINT(%s), %s, %s)
                 RETURNING id
-            """, (research_id, owner_id, qr_id, collected_at, str(gps), weather, user_comment)
+            """, (research_id, owner_id, qr_id, collected_at, gps_string, weather, user_comment)
             )
             sample_id = cursor.fetchone()[0]
 
@@ -216,3 +216,18 @@ class SamplesManager(AbstractDBManager):
             return self.logger.log(f"Error: Sample #{sample_id} does not exist.", "") if log else ""
         weather = self._SELECT("weather", "sample", "id", sample_id)
         return weather if weather else ""
+
+    def get_samples_by_user_identifier(self, user_identifier):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT id
+                FROM "sample"
+                WHERE owner_id = %s
+            """, (user_identifier,))
+            samples = cursor.fetchall()
+            if samples:
+                samples = samples[0]
+            else:
+                samples = []
+            samples = [{'sample_id': sample_id} for sample_id in samples]
+        return samples

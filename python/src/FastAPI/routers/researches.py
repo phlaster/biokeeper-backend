@@ -6,29 +6,32 @@ from db_manager import DBM
 from datetime import date
 
 from exceptions import HTTPConflictException, HTTPForbiddenException, NoResearchException, HTTPNotFoundException, NoUserException
-from schemas.researches import ApproveResearchRequest, CreateResearchRequest, DeclineResearchRequest, GetResearchRequest, ResearchBase, ResearchNewStatusResponse, ResearchRequest, ResearchResponse, SendResearchParticipantRequest
+from schemas.researches import ApproveResearchRequest, CreateResearchRequest, DeclineResearchRequest, GetResearchRequest, ResearchBase, ResearchNewStatusResponse, ResearchRequest, ResearchResponse, SendResearchParticipantRequest, MyResearch
 from schemas.common import TokenPayload
 from utils import get_admin, get_current_user, get_volunteer_or_admin
 
+from dependencies.identifiers_validators import research_identifier_validator_dependency
 
-router = APIRouter()
+router = APIRouter(tags=['researches'])
 
 @router.get('/researches', response_model=list[ResearchResponse])
 def get_researches(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    return JSONResponse(status_code=status.HTTP_200_OK, content=DBM.researches.get_all())
+    all_researches = list(DBM.researches.get_all().values())
+    return JSONResponse(status_code=status.HTTP_200_OK, content=all_researches)
 
 @router.get('/researches/{research_identifier}', response_model=ResearchResponse)
-def get_research(get_research_request: GetResearchRequest, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    research_identifier = get_research_request.research_identifier
+def get_research(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
+    print(research_identifier)
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
     except NoResearchException:
         raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_research)
 
-@router.post('researches/{research_identifier}/send_request')
-def send_request(send_research_participant_request: SendResearchParticipantRequest, token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]):
-    research_identifier = send_research_participant_request.research_identifier_identifier
+@router.post('/researches/{research_identifier}/send_request')
+def send_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], 
+                token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]
+                ):
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
     except NoResearchException:
@@ -52,9 +55,8 @@ def send_request(send_research_participant_request: SendResearchParticipantReque
     return JSONResponse(status_code=status.HTTP_200_OK, content=f"User {token_payload.id} sent request to research {research_identifier}")
 
 
-@router.post('researches/{research_identifier}/approve_request')
-def approve_request(approve_research_request: ApproveResearchRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
-    research_identifier = approve_research_request.research_identifier
+@router.post('/researches/{research_identifier}/approve_request')
+def approve_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], approve_research_request: ApproveResearchRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     candidate_identifier = approve_research_request.candidate_identifier
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
@@ -88,9 +90,8 @@ def approve_request(approve_research_request: ApproveResearchRequest, token_payl
     DBM.researches.approve_request(research_id, candidate_id, log=False)
     return JSONResponse(status_code=status.HTTP_200_OK, content=f"User {candidate_id} approved request to research {research_identifier}")
 
-@router.post('researches/{research_identifier}/decline_request')
-def decline_request(decline_research_request: DeclineResearchRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
-    research_identifier = decline_research_request.research_identifier
+@router.post('/researches/{research_identifier}/decline_request')
+def decline_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], decline_research_request: DeclineResearchRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     candidate_identifier = decline_research_request.candidate_identifier
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
@@ -127,10 +128,9 @@ def decline_request(decline_research_request: DeclineResearchRequest, token_payl
 
 @router.put('/researches/{research_identifier}/start', response_model=ResearchNewStatusResponse)
 def set_research_start(
-    start_research_request: ResearchRequest,
-    token_payload: Annotated[TokenPayload, Depends(get_admin)]
-):
-    research_identifier = start_research_request.research_identifier
+        research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
+        token_payload: Annotated[TokenPayload, Depends(get_admin)]
+        ):
     try:
         research_info = DBM.researches.get_info(research_identifier)
     except NoResearchException:
@@ -157,10 +157,9 @@ def set_research_start(
 
 @router.put('/researches/{research_identifier}/pause', response_model=ResearchNewStatusResponse)
 def set_research_paused(
-    pause_research_request: ResearchRequest,
-    token_payload: Annotated[TokenPayload, Depends(get_admin)]
-):
-    research_identifier = pause_research_request.research_identifier
+            research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
+            token_payload: Annotated[TokenPayload, Depends(get_admin)]
+        ):
     try:
         research_info = DBM.researches.get_info(research_identifier)
     except NoResearchException:
@@ -190,10 +189,9 @@ def set_research_paused(
 
 @router.put('/researches/{research_identifier}/end', response_model=ResearchNewStatusResponse)
 def set_research_ended(
-    end_research_request: ResearchRequest,
-    token_payload: Annotated[TokenPayload, Depends(get_admin)]
-):
-    research_identifier = end_research_request.research_identifier
+        research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
+        token_payload: Annotated[TokenPayload, Depends(get_admin)]
+    ):
     try:
         research_info = DBM.researches.get_info(research_identifier)
     except NoResearchException:
@@ -220,10 +218,9 @@ def set_research_ended(
 
 @router.put('/researches/{research_identifier}/cancel', response_model=ResearchNewStatusResponse)
 def set_research_cancelled(
-    cancel_research_request: ResearchRequest,
+    research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
 ):
-    research_identifier = cancel_research_request.research_identifier
     try:
         research_info = DBM.researches.get_info(research_identifier)
     except NoResearchException:
@@ -271,5 +268,4 @@ def create_research(
     return JSONResponse(status_code=status.HTTP_201_CREATED, 
                         content={'id': new_research_id, 'name': research_name}
                         )
-
 

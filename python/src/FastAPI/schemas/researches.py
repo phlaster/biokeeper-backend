@@ -38,18 +38,34 @@ class CandidateRequest(BaseModel):
     def validate_candidate_identifier(cls, v):
         return validate_identifier(v, 'candidate_identifier must be either an integer or a string')
 
-class ApproveResearchRequest(ResearchRequest, CandidateRequest):
-    pass
+class ApproveResearchRequest(BaseModel):
+    candidate_identifier : int | str
+    @field_validator('candidate_identifier', mode="before")
+    def validate_candidate_identifier(cls, v):
+        return validate_identifier(v, 'candidate_identifier must be either an integer or a string')
 
-class DeclineResearchRequest(ResearchRequest, CandidateRequest):
-    pass
+class DeclineResearchRequest(BaseModel):
+    candidate_identifier : int | str
+
+    @field_validator('candidate_identifier', mode="before")
+    def validate_research_identifier(cls, v):
+        return validate_identifier(v, 'candidate_identifier must be either an integer or a string')
 
 class CreateResearchRequest(BaseModel):
     research_name: str
     day_start: date
-    research_comment: str | None = None,
+    research_comment: str | None
     approval_required: bool = True
+
+    @field_validator('research_comment', mode="before")
+    def validate_comment(cls, v):
+        if v is None:
+            return ''
+        return v
 
 class ResearchNewStatusResponse(BaseModel):
     research_identifier: int | str
     status: str
+
+class MyResearch(BaseModel):
+    research_id: int

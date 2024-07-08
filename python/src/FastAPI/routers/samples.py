@@ -6,25 +6,31 @@ from db_manager import DBM
 from datetime import datetime
 from exceptions import HTTPConflictException, HTTPNotFoundException, NoSampleException, HTTPForbiddenException, NoResearchException, NoQrCodeException
 from schemas.common import TokenPayload
-from schemas.samples import CreateSampleRequest, GetSampleRequest, SampleBase, SampleInfo
+from schemas.samples import CreateSampleRequest, GpsModel, MySample, SampleBase, SampleInfo
 from utils import get_current_user, get_volunteer_or_admin, is_admin, is_observer
 
-router = APIRouter()
+router = APIRouter(tags=['samples'])
 
 
 @router.get('/samples', response_model = list[SampleInfo])
 def get_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    return DBM.samples.get_all()
+    all_samples = list(DBM.samples.get_all().values())
+    for sample in all_samples:
+        latitude, longitude = sample['gps'][1:-1].split(',')
+        sample['gps'] = GpsModel(latitude=latitude, longitude=longitude)
+    return all_samples
 
 @router.get('/samples/{sample_id}', response_model = SampleInfo)
-def get_sample(sample_request: GetSampleRequest, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    sample_id = sample_request.sample_id
+def get_sample(sample_id:  int, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     try:
         dbm_sample = DBM.samples.get_info(sample_id)
     except NoSampleException:
         raise HTTPNotFoundException(detail=f'Sample {sample_id} not found')
     if not is_admin(token_payload) and dbm_sample['owner_id'] != token_payload.id or is_observer(token_payload):
         raise HTTPForbiddenException(detail=f'Sample owner differs from autorized user')
+    
+    latitude, longitude = dbm_sample['gps'][1:-1].split(',')
+    dbm_sample['gps'] = GpsModel(latitude=latitude, longitude=longitude)
     return dbm_sample
 
 @router.post('/samples', response_model = SampleBase)
