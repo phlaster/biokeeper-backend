@@ -1,7 +1,10 @@
 from DBM.ADBM import AbstractDBManager
 from DBM.UsersManager import UsersManager
 import os
+from exceptions import NoKitException
 from multimethod import multimethod
+from utils import validate_return_from_db
+
 
 class KitsManager(AbstractDBManager):
     def _generate_qr_bytes(self, n: int, l: int = 10):
@@ -18,16 +21,20 @@ class KitsManager(AbstractDBManager):
     @multimethod
     def has(self, kit_id: int, log=False):
         id = self._SELECT("id", "kit", "id", kit_id)
-        if not id:
-            return self.logger.log(f"Error: No kit #{kit_id}.", 0) if log else 0
-        return id
+        return validate_return_from_db({"kit": id},
+                                       "kit_id",
+                                       kit_id,
+                                       self.logger if log else None,
+                                       NoKitException)
 
     @multimethod
     def has(self, unique_hex: str, log=False):
         id = self._SELECT("id", "kit", "unique_hex", unique_hex)
-        if not id:
-            return self.logger.log(f"Error: No kit with hex '{unique_hex}'.", 0) if log else 0
-        return id
+        return validate_return_from_db({"kit": id},
+                                       "unique_hex",
+                                       unique_hex,
+                                       self.logger if log else None,
+                                       NoKitException)
 
     def status_of(self, identifier, log=False):
         kit_id = self.has(identifier)
@@ -59,18 +66,20 @@ class KitsManager(AbstractDBManager):
 
         with self.db as (conn, cursor):
             cursor.execute("""
-                SELECT unique_hex, created_at, updated_at, status, owner_id
+                SELECT unique_hex, created_at, updated_at, status, owner_id, creator_id
                 FROM "kit"
                 WHERE id = %s
             """, (kit_id,))
             kit_data = cursor.fetchone()
 
             if kit_data:
+                kit_info_dict['id'] = kit_id
                 kit_info_dict['unique_hex'] = kit_data[0]
                 kit_info_dict['created_at'] = kit_data[1].astimezone().isoformat()
                 kit_info_dict['updated_at'] = kit_data[2].astimezone().isoformat()
                 kit_info_dict['status'] = self.status_of(kit_id)
-
+                kit_info_dict['creator_id'] = kit_data[5]
+                kit_info_dict['owner_id'] = kit_data[4]
                 if kit_data[4]:  # Check if user_id is not None
                     cursor.execute("""
                         SELECT id, name
@@ -93,7 +102,7 @@ class KitsManager(AbstractDBManager):
         return self._all_getter("id", "kit")
 
     @multimethod
-    def new(self, n_qrs: int, log=False):
+    def new(self, n_qrs: int, creator_id: int, log=False):
         if n_qrs > 50:
             self.logger.log(f"Info : No more than 50 QRs in one kit!")
             n_qrs = 50
@@ -102,10 +111,10 @@ class KitsManager(AbstractDBManager):
         
         with self.db as (conn, cursor):
             cursor.execute("""
-                INSERT INTO "kit" (unique_hex, n_qrs)
-                VALUES (%s, %s)
+                INSERT INTO "kit" (unique_hex, n_qrs, creator_id)
+                VALUES (%s, %s, %s)
                 RETURNING id
-            """, (kit_unique_hex, n_qrs))
+            """, (kit_unique_hex, n_qrs, creator_id))
             kit_id = cursor.fetchone()[0]
             for qr_unique_code in qr_unique_hexes:
                 cursor.execute("""
@@ -120,19 +129,36 @@ class KitsManager(AbstractDBManager):
     def change_status(self, identifier, new_status, log=False):
         return self._change_status("kit", identifier, new_status, log=log)
 
-    
-    def change_owner(self, identifier, new_owner_identifier, log=False):
-        kit_id = self.has(identifier, log=log)
-        if not kit_id:
-            return self.logger.log(f"Error: Kit #{kit_id} does not exist.", False) if log else False
 
-        users = UsersManager(self.logdata, logfile=self.logfile)
-        user_id = users.has(new_owner_identifier, log=log)
-        if not user_id:
-            return self.logger.log(f"Error: User #{user_id} does not exist.", False) if log else False
-
+    def send_kit(self, kit_id: int, new_owner_id: int, log=False):
         with self.db as (conn, cursor):
-            cursor.execute("""UPDATE "kit" SET owner_id = %s WHERE id = %s""", (user_id, kit_id))
+            cursor.execute("""UPDATE "kit" SET owner_id = %s WHERE id = %s""", (new_owner_id, kit_id))
             conn.commit()
-        log and self.logger.log(f"Info : Owner of Kit #{kit_id} changed to user #{user_id}", kit_id)
+        with self.db as (conn, cursor):
+            cursor.execute("""UPDATE "kit" SET status = 2 WHERE id = %s""", (kit_id,))
+            conn.commit()
+        log and self.logger.log(f"Info : Owner of Kit #{kit_id} changed to user #{new_owner_id}", kit_id)
         return kit_id
+
+    def activate(self, kit_id: int, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""UPDATE "kit" SET status = 3 WHERE id = %s""", (kit_id,))
+            conn.commit()
+        log and self.logger.log(f"Info : Kit #{kit_id} activated", kit_id)
+        return kit_id
+    
+
+    def get_kits_by_user_identifier(self, user_identifier):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT id
+                FROM "kit"
+                WHERE owner_id = %s
+            """, (user_identifier,))
+            kits = cursor.fetchall()
+            if kits:
+                kits = kits[0]
+            else:
+                kits = []
+            kits = [{'kit_id': kit_id} for kit_id in kits]
+        return kits

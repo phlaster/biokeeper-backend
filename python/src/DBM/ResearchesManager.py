@@ -1,7 +1,9 @@
 from DBM.ADBM import AbstractDBManager
 from DBM.UsersManager import UsersManager
 import datetime
+from exceptions import NoResearchException
 from multimethod import multimethod
+from utils import validate_return_from_db
 
 class ResearchesManager(AbstractDBManager):
     def count(self, status:str="all"):
@@ -14,16 +16,20 @@ class ResearchesManager(AbstractDBManager):
     @multimethod
     def has(self, research_name: str, log=False):
         id = self._SELECT("id", "research", "name", research_name)
-        if not id:
-            return self.logger.log(f"Error: No such research '{research_name}'.", 0) if log else 0
-        return id
+        return validate_return_from_db({"research": id},
+                                       "research_name",
+                                       research_name,
+                                       self.logger if log else None,
+                                       NoResearchException)
     
     @multimethod
     def has(self, research_id: int, log=False):
         id = self._SELECT("id", "research", "id", research_id)
-        if not id:
-            return self.logger.log(f"Error: No such research #{research_id}.", 0) if log else 0
-        return id
+        return validate_return_from_db({"research": id},
+                                       "research_id",
+                                       research_id,
+                                       self.logger if log else None,
+                                       NoResearchException)
 
     
     def status_of(self, identifier, log=False):
@@ -41,7 +47,7 @@ class ResearchesManager(AbstractDBManager):
 
         with self.db as (conn, cursor):
             cursor.execute("""
-                SELECT name, created_at, updated_at, created_by, day_start, day_end, n_samples, comment
+                SELECT name, created_at, updated_at, created_by, day_start, day_end, n_samples, comment, approval_required
                 FROM "research"
                 WHERE id = %s
             """, (research_id,))
@@ -58,6 +64,7 @@ class ResearchesManager(AbstractDBManager):
             research_info_dict['day_end'] = research_data[5].strftime("%Y-%m-%d") if research_data[5] else None
             research_info_dict['n_samples'] = research_data[6]
             research_info_dict['comment'] = research_data[7]
+            research_info_dict['approval_required'] = research_data[8]
 
         return research_info_dict
 
@@ -66,29 +73,17 @@ class ResearchesManager(AbstractDBManager):
         return self._all_getter("id", "research")
 
     
-    def new(self, research_name: str, user_name: str, day_start: datetime.date, research_comment: str = None, log=False):
-        if self.has(research_name):
-            return self.logger.log(f"Error: Research '{research_name}' is already exists.", 0) if log else 0
-
-        users = UsersManager(self.logdata, logfile=self.logfile)
-        user_id = users.has(user_name)
-        if not user_id:
-            return self.logger.log(f"Error: Can't assign new research '{research_name}' to a nonexisting user '{user_name}'.", 0) if log else 0
-
-        user_status = users.status_of(user_name) # Careful here!
-        if user_status != "admin":
-            return self.logger.log(f"Error: User '{user_name}' of status '{user_status}' has no privilege to create researches.", 0) if log else 0
-
+    def new(self, research_name: str, user_id: int, day_start: datetime.date, research_comment: str = None, log=False, approval_required=True):
         with self.db as (conn, cursor):
             cursor.execute("""
                 INSERT INTO "research"
-                (name, comment, created_by, day_start)
-                VALUES (%s, %s, %s, %s)
+                (name, comment, created_by, day_start,approval_required)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING id
-            """, (research_name, research_comment, user_id, day_start))
+            """, (research_name, research_comment, user_id, day_start, approval_required))
             research_id = cursor.fetchone()[0]
             conn.commit()
-        log and self.logger.log(f"Info : Created research #{research_id} '{research_name}' starting on {day_start} by '{user_name}'", research_id)
+        log and self.logger.log(f"Info : Created research #{research_id} '{research_name}' starting on {day_start} by user with id '{user_id}'. Approval required: {approval_required}", research_id)
         return research_id
 
     
@@ -132,3 +127,81 @@ class ResearchesManager(AbstractDBManager):
 
         log and self.logger.log(f"Info : Now research #{research_id} ends on {day_end}", research_id)
         return research_id
+    
+    def get_participants(self, research_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT user_id
+                FROM "user_research"
+                WHERE research_id = %s
+            """, (research_id,))
+            participants = cursor.fetchall()
+            if participants:
+                participants = participants[0]
+            else:
+                participants = []
+
+        return participants
+
+    def get_candidates(self, research_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT user_id
+                FROM "user_research_pending"
+                WHERE research_id = %s
+            """, (research_id,))
+            candidates = cursor.fetchall()
+            if candidates:
+                candidates = candidates[0]
+            else:
+                candidates = []
+
+        return candidates
+
+    def send_request(self, research_id, user_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                INSERT INTO "user_research_pending"
+                (research_id, user_id)
+                VALUES (%s, %s)
+            """, (research_id, user_id))
+            conn.commit()
+
+    def approve_request(self, research_id, user_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                DELETE FROM "user_research_pending"
+                WHERE research_id = %s AND user_id = %s
+            """, (research_id, user_id))
+
+            cursor.execute("""
+                INSERT INTO "user_research"
+                (research_id, user_id)
+                VALUES (%s, %s)
+            """, (research_id, user_id))
+
+            conn.commit()
+
+    def decline_request(self, research_id, user_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                DELETE FROM "user_research_pending"
+                WHERE research_id = %s AND user_id = %s
+            """, (research_id, user_id))
+            conn.commit()
+
+    def get_researches_by_user_identifier(self, user_identifier):
+
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT research_id
+                FROM "user_research"
+                WHERE user_id = %s
+            """, (user_identifier,))
+            researches = cursor.fetchall()
+            if researches:
+                researches = researches[0]
+            else:
+                researches = []
+            researches = [{'research_id': research_id} for research_id in researches]
+        return researches
