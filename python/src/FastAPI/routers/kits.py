@@ -46,8 +46,24 @@ def update_owner(
     DBM.kits.send_kit(kit_info['id'], new_owner_id, log=True)
     return JSONResponse(status_code=status.HTTP_200_OK, content=f"Kit {validated_kit_identifier} owner changed to {new_owner_id}")
     
-
-
+@router.put('/kits/{kit_identifier}/activate')
+def activate_kit(
+    kit_identifier: str,
+    token_payload: Annotated[TokenPayload, Depends(get_admin)]
+    
+):
+    validated_kit_identifier = Identifier(identifier=kit_identifier).identifier
+    try:
+        kit_info = DBM.kits.get_info(validated_kit_identifier)
+    except NoKitException:
+        raise HTTPNotFoundException(detail=f'Kit {validated_kit_identifier} not found')        
+    if kit_info['owner_id'] == token_payload.id:
+        raise HTTPConflictException(detail=f'User {token_payload.id} is not an owner of kit {validated_kit_identifier}')
+    if kit_info['status'] == 'activated':
+        raise HTTPConflictException(detail=f'Kit {validated_kit_identifier} already activated')
+    DBM.kits.activate(kit_info['id'], log=True)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=f"Kit {validated_kit_identifier} is activated")
+    
 @router.post('/kits')
 def create_kit(n_qrs: int, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     return DBM.kits.new(n_qrs)
