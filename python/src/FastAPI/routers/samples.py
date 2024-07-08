@@ -30,7 +30,7 @@ def get_sample(sample_id: int, token_payload: Annotated[TokenPayload, Depends(ge
 def create_sample(
     token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)],
     qr_hex: str,
-    research_name: str,
+    research_id: int,
     collected_at: datetime,
     gps: str,
     weather: str = None,
@@ -38,7 +38,7 @@ def create_sample(
     photo_hex_string: str = None
 ):
     try:
-        dbm_research = DBM.researches.get_info(research_name)
+        dbm_research = DBM.researches.get_info(research_id)
     except NoResearchException:
         raise HTTPNotFoundException(detail=f'Research with id {research_id} not found')
     
@@ -77,7 +77,7 @@ def create_sample(
 
 
     dbm_new_sample_id = DBM.samples.new(qr_id=dbm_qr_info['id'], 
-                        research_id=dbm_research['id'], 
+                        research_id=int(dbm_research['id']), 
                         owner_id = token_payload.id,
                         collected_at=collected_at,
                             gps=gps,
