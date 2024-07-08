@@ -4,7 +4,7 @@ from fastapi.routing import APIRouter
 from db_manager import DBM
 from datetime import date
 from exceptions import HTTPConflictException, NoResearchException, HTTPNotFoundException
-from schemas import TokenPayload
+from schemas import Identifier, TokenPayload
 from utils import get_admin, get_current_user
 
 router = APIRouter()
@@ -15,10 +15,11 @@ def get_researches(token_payload: Annotated[TokenPayload, Depends(get_current_us
 
 @router.get('/researches/{research_identifier}')
 def get_research(research_identifier, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
+    research_identifier = Identifier(identifier=research_identifier).identifier
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
     except NoResearchException:
-        raise HTTPNotFoundException(details=f'Research {research_identifier} not found')
+        raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
     return dbm_research
 
 @router.post('/researches')
