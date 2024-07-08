@@ -76,14 +76,15 @@ def create_sample(
         raise HTTPConflictException(detail=f'Kit {dbm_kit["id"]} hasn\'t been activated')
 
 
-    dbm_new_sample_id = DBM.samples.new(qr_id=dbm_qr_info['id'], 
+    dbm_new_sample_id = DBM.samples.new(qr_id=int(dbm_qr_info['id']), 
                         research_id=int(dbm_research['id']), 
-                        owner_id = token_payload.id,
+                        owner_id = int(token_payload.id),
                         collected_at=collected_at,
-                            gps=gps,
-                            weather=weather, 
-                            user_comment=user_comment,
-                            photo_hex_string = photo_hex_string)
+                        gps=gps,
+                        weather=weather, 
+                        user_comment=user_comment,
+                        photo_hex_string = photo_hex_string,
+                        log = False)
     return dbm_new_sample_id
         
     
