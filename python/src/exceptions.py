@@ -33,3 +33,9 @@ class HTTPConflictException(HTTPException):
     def __init__(self, *args, **kwargs):
         super().__init__(status_code=self.status_code, *args, **kwargs)
 
+
+class HTTPNotEnoughPermissionsException(HTTPException):
+        status_code=status.HTTP_403_FORBIDDEN
+        detail = "Not enough permissions"
+        def __init__(self, detail, *args, **kwargs):
+            super().__init__(status_code=self.status_code, detail=detail, *args, **kwargs)
