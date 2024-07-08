@@ -49,3 +49,7 @@ class CreateResearchRequest(BaseModel):
     day_start: date
     research_comment: str | None = None,
     approval_required: bool = True
+
+class ResearchNewStatusResponse(BaseModel):
+    research_identifier: int | str
+    status: str

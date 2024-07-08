@@ -6,7 +6,8 @@ from db_manager import DBM
 from datetime import date
 
 from exceptions import HTTPConflictException, HTTPForbiddenException, NoResearchException, HTTPNotFoundException, NoUserException
-from schemas.researches import ApproveResearchRequest, CreateResearchRequest, DeclineResearchRequest, GetResearchRequest, ResearchBase, ResearchResponse, SendResearchParticipantRequest
+from schemas.researches import ApproveResearchRequest, CreateResearchRequest, DeclineResearchRequest, GetResearchRequest, ResearchBase, ResearchNewStatusResponse, ResearchRequest, ResearchResponse, SendResearchParticipantRequest
+from schemas.common import TokenPayload
 from utils import get_admin, get_current_user, get_volunteer_or_admin
 
 
@@ -121,107 +122,128 @@ def decline_request(decline_research_request: DeclineResearchRequest, token_payl
         raise HTTPConflictException(detail=f'User {candidate_id} not sent request to research {research_identifier}')
 
     DBM.researches.decline_request(research_id, candidate_id, log=False)
-    return Response(status_code=status.HTTP_200_OK, content=f"User {candidate_id} declined request to research {research_identifier}")
+    return Response(status_code=status.HTTP_200_OK, 
+                    content=f"User {candidate_id} declined request to research {research_identifier}")
 
-@router.put('/researches/{research_identifier}/start')
+@router.put('/researches/{research_identifier}/start', response_model=ResearchNewStatusResponse)
 def set_research_start(
-    research_identifier: str,
+    start_research_request: ResearchRequest,
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
 ):
-    research_identifier = Identifier(identifier=research_identifier).identifier
+    research_identifier = start_research_request.research_identifier
     try:
         research_info = DBM.researches.get_info(research_identifier)
     except NoResearchException:
         raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
+    
     if token_payload.id != research_info['created_by']:
         raise HTTPForbiddenException(detail=f'Research owner differs from autorized user')
+    
     if  research_info['status'] == 'ongoing':
         raise HTTPConflictException(detail=f'Research {research_identifier} already ongoing')
+    
     if research_info['status'] == 'ended':
         raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
+    
     if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already cancelled')
-    try:
-        DBM.researches.change_status(research_identifier, new_status=2, log=True)
-    except NoResearchException:
-        raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
-    return {"research_id": research_identifier, "new_status": "ongoing"}
+        raise HTTPConflictException(detail=f'Research {research_identifier} is cancelled')
+    
+    DBM.researches.change_status(research_identifier, new_status="ongoing", log=True)
 
-@router.put('/researches/{research_identifier}/paused')
+    return JSONResponse(status_code=status.HTTP_200_OK, 
+                        content={"research_identifier": research_identifier, 
+                                 "status": "ongoing"})
+
+
+@router.put('/researches/{research_identifier}/pause', response_model=ResearchNewStatusResponse)
 def set_research_paused(
-    research_identifier: str,
+    pause_research_request: ResearchRequest,
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
 ):
-    research_identifier = Identifier(identifier=research_identifier).identifier
+    research_identifier = pause_research_request.research_identifier
     try:
         research_info = DBM.researches.get_info(research_identifier)
     except NoResearchException:
         raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
+    
     if token_payload.id != research_info['created_by']:
         raise HTTPForbiddenException(detail=f'Research owner differs from autorized user')
+    
+    if  research_info['status'] == 'pending':
+        raise HTTPConflictException(detail=f'Research {research_identifier} not started yet')
+
     if  research_info['status'] == 'paused':
         raise HTTPConflictException(detail=f'Research {research_identifier} already paused')
+    
     if research_info['status'] == 'ended':
         raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
+    
     if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already cancelled')
-    try:
-        DBM.researches.change_status(research_identifier, new_status=3, log=True)
-    except NoResearchException:
-        raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
-    return {"research_id": research_identifier, "new_status": "paused"}
+        raise HTTPConflictException(detail=f'Research {research_identifier} is cancelled')
 
-@router.put('/researches/{research_identifier}/end')
+    DBM.researches.change_status(research_identifier, new_status="paused", log=True)
+
+    return JSONResponse(status_code=status.HTTP_200_OK, 
+                        content={"research_identifier": research_identifier, 
+                                 "status": "paused"})
+
+
+@router.put('/researches/{research_identifier}/end', response_model=ResearchNewStatusResponse)
 def set_research_ended(
-    research_identifier: str,
+    end_research_request: ResearchRequest,
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
 ):
-    research_identifier = Identifier(identifier=research_identifier).identifier
+    research_identifier = end_research_request.research_identifier
     try:
         research_info = DBM.researches.get_info(research_identifier)
     except NoResearchException:
         raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
+    
     if token_payload.id != research_info['created_by']:
         raise HTTPForbiddenException(detail=f'Research owner differs from autorized user')
-    if  research_info['status'] == 'paused':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already paused')
-    if research_info['status'] == 'ended':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
-    if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already cancelled')
-    if research_info['status'] == 'ongoing':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already ongoing')
-    try:
-        DBM.researches.change_status(research_identifier, new_status=4, log=True)
-    except NoResearchException:
-        raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
-    return {"research_id": research_identifier, "new_status": "ended"}
+    
+    if  research_info['status'] == 'pending':
+        raise HTTPConflictException(detail=f'Research {research_identifier} not started yet')
 
-@router.put('/researches/{research_identifier}/cancel')
+    if research_info['status'] == 'ended':
+        raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
+    
+    if research_info['status'] == 'cancelled':
+        raise HTTPConflictException(detail=f'Research {research_identifier} is cancelled')
+    
+    DBM.researches.change_status(research_identifier, new_status="ended", log=True)
+    
+    return JSONResponse(status_code=status.HTTP_200_OK, 
+                        content={"research_identifier": research_identifier, 
+                                 "status": "ended"})
+
+
+@router.put('/researches/{research_identifier}/cancel', response_model=ResearchNewStatusResponse)
 def set_research_cancelled(
-    research_identifier: str,
+    cancel_research_request: ResearchRequest,
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
 ):
-    research_identifier = Identifier(identifier=research_identifier).identifier
+    research_identifier = cancel_research_request.research_identifier
     try:
         research_info = DBM.researches.get_info(research_identifier)
     except NoResearchException:
         raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
+    
     if token_payload.id != research_info['created_by']:
         raise HTTPForbiddenException(detail=f'Research owner differs from autorized user')
-    if  research_info['status'] == 'paused':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already paused')
-    if research_info['status'] == 'ended':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
+    
     if research_info['status'] == 'cancelled':
         raise HTTPConflictException(detail=f'Research {research_identifier} already cancelled')
-    if research_info['status'] == 'ongoing':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already ongoing')
-    try:
-        DBM.researches.change_status(research_identifier, new_status=5, log=True)
-    except NoResearchException:
-        raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
-    return {"research_id": research_identifier, "new_status": "cancelled"}
+    
+    if research_info['status'] == 'ended':
+        raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
+    
+    DBM.researches.change_status(research_identifier, new_status="cancelled", log=True)
+    
+    return JSONResponse(status_code=status.HTTP_200_OK, 
+                        content={"research_identifier": research_identifier, 
+                                 "status": "cancelled"})
+
 
 @router.post('/researches', response_model=ResearchBase)
 def create_research(
