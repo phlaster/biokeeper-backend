@@ -103,12 +103,9 @@ class KitsManager(AbstractDBManager):
 
     @multimethod
     def new(self, n_qrs: int, creator_id: int, log=False):
-        if n_qrs > 50:
-            self.logger.log(f"Info : No more than 50 QRs in one kit!")
-            n_qrs = 50
         kit_unique_hex = os.urandom(8).hex()
         qr_unique_hexes = self._generate_qr_bytes(n_qrs)
-        
+
         with self.db as (conn, cursor):
             cursor.execute("""
                 INSERT INTO "kit" (unique_hex, n_qrs, creator_id)

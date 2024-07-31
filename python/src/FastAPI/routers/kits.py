@@ -86,6 +86,10 @@ def activate_kit(
     
 @router.post('/kits', response_model=KitInfo, tags=['admin_panel'])
 def create_kit(create_kit_request: CreateKitRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
+    if create_kit_request.n_qrs <= 0:
+        raise HTTPConflictException(detail=f'Number of QRS should be positive')
+    if create_kit_request.n_qrs > 100:
+        raise HTTPConflictException(detail=f'Number of QRS should be less than 100')
     kit_id = DBM.kits.new(create_kit_request.n_qrs, token_payload.id, log=True)
     kit_info = DBM.kits.get_info(kit_id)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=kit_info)
