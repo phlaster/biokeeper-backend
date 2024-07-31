@@ -11,7 +11,7 @@ from schemas.users import GetUserRequest, UserResponse
 from schemas.kits import MyKit
 from schemas.samples import MySample
 from schemas.researches import MyResearch
-from utils import get_current_user
+from utils import get_admin, get_current_user
 
 from dependencies.identifiers_validators import user_identifier_validator_dependency
 
@@ -51,3 +51,14 @@ def get_user_researches(token_payload: Annotated[TokenPayload, Depends(get_curre
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content=DBM.researches.get_researches_by_user_identifier(token_payload.id))
 
+
+
+@router.get('/users/me/admin/created_researches/')
+def get_created_researches(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
+    created_researches = DBM.researches.get_created_researches_by_user_identifier(token_payload.id)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=created_researches)
+
+@router.get('/users/me/admin/created_kits/')
+def get_created_kits(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
+    created_kits = DBM.kits.get_created_kits_by_user_identifier(token_payload.id)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=created_kits)

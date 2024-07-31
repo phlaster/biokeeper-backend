@@ -162,3 +162,21 @@ class KitsManager(AbstractDBManager):
                 kits = []
             kits = [{'kit_id': kit_id} for kit_id in kits]
         return kits
+    
+    def get_created_kits_by_user_identifier(self, user_identifier):
+
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT k.id, k.n_qrs, k.unique_hex, k.created_at, k.owner_id, u.name as owner_name
+                FROM "kit" k
+                LEFT JOIN "user" u ON k.owner_id = u.id
+                WHERE k.creator_id = %s
+            """, (user_identifier,))
+            kits = cursor.fetchall()
+
+            if kits:
+                kits = kits[0]
+            else:
+                kits = []
+            kits = [{'id': kit[0], 'n_qrs': kit[1], 'unique_hex': kit[2], 'created_at': kit[3], 'owner_id': kit[4], 'owner_name': kit[5]} for kit in kits]
+        return kits

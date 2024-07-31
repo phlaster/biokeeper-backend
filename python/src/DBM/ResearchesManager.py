@@ -205,3 +205,21 @@ class ResearchesManager(AbstractDBManager):
                 researches = []
             researches = [{'research_id': research_id} for research_id in researches]
         return researches
+
+    def get_created_researches_by_user_identifier(self, user_identifier):
+
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT id, name, status
+                FROM "research"
+                WHERE created_by = %s
+            """, (user_identifier,))
+            researches = cursor.fetchall()
+            if researches:
+                researches = researches[0]
+            else:
+                researches = []
+            researches = [{'research_id': research[0], 'research_name': research[1], 'research_status': research[2]} for research in researches]
+        return researches
+    
+    
