@@ -42,11 +42,11 @@ def send_request(research_identifier: Annotated[str, Depends(research_identifier
     if dbm_research['status'] in ['ended', 'canceled']:
         raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
     
-    participants = DBM.researches.get_participants(dbm_research['id'])
+    participants = DBM.researches.get_participants_ids(dbm_research['id'])
     if token_payload.id in participants:
         raise HTTPConflictException(detail=f'User {token_payload.id} already participate in research {research_identifier}')
     
-    candidates = DBM.researches.get_candidates(dbm_research['id'])
+    candidates = DBM.researches.get_candidates_ids(dbm_research['id'])
     if token_payload.id in candidates:
         raise HTTPConflictException(detail=f'User {token_payload.id} already sent request to research {research_identifier}')
 
@@ -78,11 +78,11 @@ def approve_request(research_identifier: Annotated[str, Depends(research_identif
     
     candidate_id = candidate_info['id']
     research_id = dbm_research['id']
-    participants = DBM.researches.get_participants(research_id)
+    participants = DBM.researches.get_participants_ids(research_id)
     if candidate_id in participants:
         raise HTTPConflictException(detail=f'User {candidate_id} already participate in research {research_identifier}')
     
-    candidates = DBM.researches.get_candidates(research_id)
+    candidates = DBM.researches.get_candidates_ids(research_id)
     if candidate_id not in candidates:
         raise HTTPConflictException(detail=f'User {candidate_id} not sent request to research {research_identifier}')
 
@@ -113,11 +113,11 @@ def decline_request(research_identifier: Annotated[str, Depends(research_identif
     
     candidate_id = candidate_info['id']
     research_id = dbm_research['id']
-    participants = DBM.researches.get_participants(research_id)
+    participants = DBM.researches.get_participants_ids(research_id)
     if candidate_id in participants:
         raise HTTPConflictException(detail=f'User {candidate_id} already participate in research {research_identifier}')
     
-    candidates = DBM.researches.get_candidates(research_id)
+    candidates = DBM.researches.get_candidates_ids(research_id)
     if candidate_id not in candidates:
         raise HTTPConflictException(detail=f'User {candidate_id} not sent request to research {research_identifier}')
 
