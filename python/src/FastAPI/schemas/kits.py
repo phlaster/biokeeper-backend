@@ -45,5 +45,5 @@ class KitsCreatedByAdminResponse(BaseModel):
     n_qrs: int
     unique_hex: str
     created_at: datetime
-    owner_id: int
-    owner_name: str
+    owner_id: int | None
+    owner_name: str | None
