@@ -73,3 +73,12 @@ class MyResearch(BaseModel):
 
 class ResearchesCreatedByAdminResponse(ResearchBase):
     status: str
+
+
+class AcceptedParticipantResponse(BaseModel):
+    user_id: int
+    username: str
+
+class PendingRequestResponse(BaseModel):
+    user_id: int
+    username: str

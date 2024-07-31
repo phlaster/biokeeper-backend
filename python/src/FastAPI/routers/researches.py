@@ -6,7 +6,7 @@ from db_manager import DBM
 from datetime import date
 
 from exceptions import HTTPConflictException, HTTPForbiddenException, NoResearchException, HTTPNotFoundException, NoUserException
-from schemas.researches import ApproveResearchRequest, CreateResearchRequest, DeclineResearchRequest, GetResearchRequest, ResearchBase, ResearchNewStatusResponse, ResearchRequest, ResearchResponse, SendResearchParticipantRequest, MyResearch
+from schemas.researches import AcceptedParticipantResponse, ApproveResearchRequest, CreateResearchRequest, DeclineResearchRequest, GetResearchRequest, PendingRequestResponse, ResearchBase, ResearchNewStatusResponse, ResearchRequest, ResearchResponse, SendResearchParticipantRequest, MyResearch
 from schemas.common import TokenPayload
 from utils import get_admin, get_current_user, get_volunteer_or_admin
 
@@ -26,6 +26,41 @@ def get_research(research_identifier: Annotated[str, Depends(research_identifier
     except NoResearchException:
         raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_research)
+
+
+@router.get('/researches/{research_identifier}/pending_requests', response_model=list[PendingRequestResponse])
+def get_pending_requests(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_admin)]):
+    try:
+        dbm_research = DBM.researches.get_info(research_identifier)
+    except NoResearchException:
+        raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
+    
+    if not dbm_research['approval_required']:
+        raise HTTPConflictException(detail=f'Approval is not required for research {research_identifier}')
+    
+    if token_payload.id != dbm_research['created_by']:
+        raise HTTPForbiddenException(detail=f'User {token_payload.id} is not creator of research {research_identifier}')
+
+    pending_requests = DBM.researches.get_pending_requests(research_identifier)
+    return pending_requests
+
+
+@router.get('/researches/{research_identifier}/accepted_participants', response_model=list[AcceptedParticipantResponse])
+def get_accepted_participants(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_admin)]):
+    try:
+        dbm_research = DBM.researches.get_info(research_identifier)
+    except NoResearchException:
+        raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
+    
+    if not dbm_research['approval_required']:
+        raise HTTPConflictException(detail=f'Approval is not required for research {research_identifier}')
+    
+    if token_payload.id != dbm_research['created_by']:
+        raise HTTPForbiddenException(detail=f'User {token_payload.id} is not creator of research {research_identifier}')
+    
+    accepted_participants = DBM.researches.get_accepted_participants(research_identifier)
+    return accepted_participants
+
 
 @router.post('/researches/{research_identifier}/send_request')
 def send_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], 

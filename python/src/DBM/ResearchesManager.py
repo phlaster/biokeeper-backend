@@ -157,7 +157,37 @@ class ResearchesManager(AbstractDBManager):
                 candidates = []
 
         return candidates
+    
+    def get_pending_requests(self, research_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT urp.user_id, u.username as username
+                FROM "user_research_pending" urp
+                LEFT JOIN "user" u ON urp.user_id = u.id
+                WHERE research_id = %s
+            """, (research_id,))
+            pending = cursor.fetchall()
+            if pending:
+                pending = [{'user_id': user_id, 'username': username} for user_id, username in pending]
+            else:
+                pending = []
+        return pending
 
+    def get_accepted_participants(self, research_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT ur.user_id, u.username as username
+                FROM "user_research" ur
+                LEFT JOIN "user" u ON ur.user_id = u.id
+                WHERE research_id = %s
+            """, (research_id,))
+            accepted = cursor.fetchall()
+            if accepted:
+                accepted = [{'user_id': user_id, 'username': username} for user_id, username in accepted]
+            else:
+                accepted = []
+        return accepted
+    
     def send_request(self, research_id, user_id, log=False):
         with self.db as (conn, cursor):
             cursor.execute("""
