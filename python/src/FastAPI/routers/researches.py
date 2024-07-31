@@ -166,7 +166,7 @@ def delete_accepted_participant(research_identifier: Annotated[str, Depends(rese
                                 token_payload: Annotated[TokenPayload, Depends(get_admin)],
                                 delete_participant_request: DeleteParticipantRequest
                                 ):
-    candidate_identifier = delete_participant_request.candidate_identifier
+    participant_identifier = delete_participant_request.participant_identifier
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
     except NoResearchException:
@@ -182,20 +182,20 @@ def delete_accepted_participant(research_identifier: Annotated[str, Depends(rese
         raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
     
     try:
-        candidate_info = DBM.users.get_info(candidate_identifier)
+        participant_info = DBM.users.get_info(participant_identifier)
     except NoUserException:
-        raise HTTPNotFoundException(detail=f'User {candidate_identifier} not found')
+        raise HTTPNotFoundException(detail=f'User {participant_identifier} not found')
     
-    candidate_id = candidate_info['id']
+    participant_id = participant_info['id']
     research_id = dbm_research['id']
 
     participants = DBM.researches.get_participants_ids(research_id)
-    if candidate_id not in participants:
-        raise HTTPConflictException(detail=f'User {candidate_id} not participate in research {research_identifier}')
+    if participant_id not in participants:
+        raise HTTPConflictException(detail=f'User {participant_id} not participate in research {research_identifier}')
 
-    DBM.researches.delete_accepted_participant(research_id, candidate_id, log=False)
+    DBM.researches.delete_accepted_participant(research_id, participant_id, log=False)
     return Response(status_code=status.HTTP_200_OK, 
-                    content=f"User {candidate_id} removed from research {research_identifier}")
+                    content=f"User {participant_id} removed from research {research_identifier}")
 
 @router.put('/researches/{research_identifier}/start', response_model=ResearchNewStatusResponse)
 def set_research_start(
