@@ -8,9 +8,9 @@ from fastapi.responses import JSONResponse
 from exceptions import NoUserException, HTTPNotFoundException
 from schemas.common import TokenPayload
 from schemas.users import GetUserRequest, UserResponse
-from schemas.kits import MyKit
+from schemas.kits import KitsCreatedByAdminResponse, MyKit
 from schemas.samples import MySample
-from schemas.researches import MyResearch
+from schemas.researches import MyResearch, ResearchesCreatedByAdminResponse
 from utils import get_admin, get_current_user
 
 from dependencies.identifiers_validators import user_identifier_validator_dependency
@@ -53,12 +53,12 @@ def get_user_researches(token_payload: Annotated[TokenPayload, Depends(get_curre
 
 
 
-@router.get('/users/me/admin/created_researches/')
+@router.get('/users/me/admin/created_researches/', response_model=list[ResearchesCreatedByAdminResponse])
 def get_created_researches(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     created_researches = DBM.researches.get_created_researches_by_user_identifier(token_payload.id)
-    return JSONResponse(status_code=status.HTTP_200_OK, content=created_researches)
+    return created_researches
 
-@router.get('/users/me/admin/created_kits/')
+@router.get('/users/me/admin/created_kits/', response_model=list[KitsCreatedByAdminResponse])
 def get_created_kits(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     created_kits = DBM.kits.get_created_kits_by_user_identifier(token_payload.id)
-    return JSONResponse(status_code=status.HTTP_200_OK, content=created_kits)
+    return created_kits

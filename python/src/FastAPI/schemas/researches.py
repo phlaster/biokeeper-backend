@@ -69,3 +69,7 @@ class ResearchNewStatusResponse(BaseModel):
 
 class MyResearch(BaseModel):
     research_id: int
+
+
+class ResearchesCreatedByAdminResponse(ResearchBase):
+    status: str

@@ -39,3 +39,11 @@ class SendKitRequest(BaseModel):
 
 class CreateKitRequest(BaseModel):
     n_qrs : int
+
+class KitsCreatedByAdminResponse(BaseModel):
+    id: int
+    n_qrs: int
+    unique_hex: str
+    created_at: datetime
+    owner_id: int
+    owner_name: str
