@@ -253,3 +253,10 @@ class ResearchesManager(AbstractDBManager):
         return researches
     
     
+    def delete_accepted_participant(self, research_id, user_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                DELETE FROM "user_research"
+                WHERE research_id = %s AND user_id = %s
+            """, (research_id, user_id))
+            conn.commit()

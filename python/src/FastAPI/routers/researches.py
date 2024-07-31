@@ -6,7 +6,7 @@ from db_manager import DBM
 from datetime import date
 
 from exceptions import HTTPConflictException, HTTPForbiddenException, NoResearchException, HTTPNotFoundException, NoUserException
-from schemas.researches import AcceptedParticipantResponse, ApproveResearchRequest, CreateResearchRequest, DeclineResearchRequest, GetResearchRequest, PendingRequestResponse, ResearchBase, ResearchNewStatusResponse, ResearchRequest, ResearchResponse, SendResearchParticipantRequest, MyResearch
+from schemas.researches import AcceptedParticipantResponse, ApproveResearchRequest, CreateResearchRequest, DeclineResearchRequest, DeleteParticipantRequest, GetResearchRequest, PendingRequestResponse, ResearchBase, ResearchNewStatusResponse, ResearchRequest, ResearchResponse, SendResearchParticipantRequest, MyResearch
 from schemas.common import TokenPayload
 from utils import get_admin, get_current_user, get_volunteer_or_admin
 
@@ -159,6 +159,43 @@ def decline_request(research_identifier: Annotated[str, Depends(research_identif
     DBM.researches.decline_request(research_id, candidate_id, log=False)
     return Response(status_code=status.HTTP_200_OK, 
                     content=f"User {candidate_id} declined request to research {research_identifier}")
+
+
+@router.delete('/researches/{research_identifier}/accepted_participants')
+def delete_accepted_participant(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], 
+                                token_payload: Annotated[TokenPayload, Depends(get_admin)],
+                                delete_participant_request: DeleteParticipantRequest
+                                ):
+    candidate_identifier = delete_participant_request.candidate_identifier
+    try:
+        dbm_research = DBM.researches.get_info(research_identifier)
+    except NoResearchException:
+        raise HTTPNotFoundException(detail=f'Research {research_identifier} not found')
+    
+    if not dbm_research['created_by'] == token_payload.id:
+        raise HTTPForbiddenException(detail=f'User {token_payload.id} is not creator of research {research_identifier}')
+
+    if not dbm_research['approval_required']:
+        raise HTTPConflictException(detail=f'Research {research_identifier} approval is not required')
+
+    if dbm_research['status'] in ['ended', 'canceled']:
+        raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
+    
+    try:
+        candidate_info = DBM.users.get_info(candidate_identifier)
+    except NoUserException:
+        raise HTTPNotFoundException(detail=f'User {candidate_identifier} not found')
+    
+    candidate_id = candidate_info['id']
+    research_id = dbm_research['id']
+
+    participants = DBM.researches.get_participants_ids(research_id)
+    if candidate_id not in participants:
+        raise HTTPConflictException(detail=f'User {candidate_id} not participate in research {research_identifier}')
+
+    DBM.researches.delete_accepted_participant(research_id, candidate_id, log=False)
+    return Response(status_code=status.HTTP_200_OK, 
+                    content=f"User {candidate_id} removed from research {research_identifier}")
 
 @router.put('/researches/{research_identifier}/start', response_model=ResearchNewStatusResponse)
 def set_research_start(
