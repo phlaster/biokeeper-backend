@@ -57,10 +57,12 @@ class CreateResearchRequest(BaseModel):
     research_comment: str | None
     approval_required: bool = True
 
-    @field_validator('research_name', mode="before")
+    @field_validator('research_name', mode="after")
     def validate_name(cls, v):
-        if v is None or len(v) == 0:
+        if v.strip() == '':
             raise ValueError('research_name cannot be empty')
+        return v
+            
 
     @field_validator('research_comment', mode="before")
     def validate_comment(cls, v):
