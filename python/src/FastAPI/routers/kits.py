@@ -12,14 +12,14 @@ from utils import get_current_user
 
 from dependencies.identifiers_validators import kit_identifier_validator_dependency
 
-router = APIRouter(tags=['kits'])
+router = APIRouter()
 
-@router.get('/kits', response_model=list[KitInfo])
+@router.get('/kits', response_model=list[KitInfo], tags=['kits'])
 def get_kits(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     all_kits = list(DBM.kits.get_all().values())
     return JSONResponse(status_code=status.HTTP_200_OK, content=all_kits)
 
-@router.get('/kits/{kit_identifier}', response_model=KitInfo)
+@router.get('/kits/{kit_identifier}', response_model=KitInfo, tags=['kits'])
 def get_kit(kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)], 
             token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]):
     try:
@@ -30,7 +30,7 @@ def get_kit(kit_identifier: Annotated[str, Depends(kit_identifier_validator_depe
         raise HTTPForbiddenException(detail=f'Kit {kit_identifier} is not owned by user {token_payload.id}')
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_kit)
 
-@router.put('/kits/{kit_identifier}/send')
+@router.put('/kits/{kit_identifier}/send', tags=['admin_panel'])
 def update_owner(
     token_payload: Annotated[TokenPayload, Depends(get_admin)],
     kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)],
@@ -64,7 +64,7 @@ def update_owner(
     DBM.kits.send_kit(kit_info['id'], new_owner_id, log=True)
     return Response(status_code=status.HTTP_200_OK, content=f"Kit {kit_identifier} owner changed to {new_owner_id}")
     
-@router.put('/kits/{kit_identifier}/activate')
+@router.put('/kits/{kit_identifier}/activate', tags=['kits'])
 def activate_kit(
     kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)],
     token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]
@@ -84,7 +84,7 @@ def activate_kit(
 
     return Response(status_code=status.HTTP_200_OK, content=f"Kit {kit_identifier} is activated")
     
-@router.post('/kits', response_model=KitInfo)
+@router.post('/kits', response_model=KitInfo, tags=['admin_panel'])
 def create_kit(create_kit_request: CreateKitRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     kit_id = DBM.kits.new(create_kit_request.n_qrs, token_payload.id, log=True)
     kit_info = DBM.kits.get_info(kit_id)

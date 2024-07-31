@@ -9,10 +9,10 @@ from schemas.common import TokenPayload
 from schemas.samples import CreateSampleRequest, GpsModel, MySample, SampleBase, SampleInfo
 from utils import get_current_user, get_volunteer_or_admin, is_admin, is_observer
 
-router = APIRouter(tags=['samples'])
+router = APIRouter()
 
 
-@router.get('/samples', response_model = list[SampleInfo])
+@router.get('/samples', response_model = list[SampleInfo], tags=['samples'])
 def get_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     all_samples = list(DBM.samples.get_all().values())
     for sample in all_samples:
@@ -20,7 +20,7 @@ def get_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)
         sample['gps'] = GpsModel(latitude=latitude, longitude=longitude)
     return all_samples
 
-@router.get('/samples/{sample_id}', response_model = SampleInfo)
+@router.get('/samples/{sample_id}', response_model = SampleInfo, tags=['samples'])
 def get_sample(sample_id:  int, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     try:
         dbm_sample = DBM.samples.get_info(sample_id)
@@ -33,7 +33,7 @@ def get_sample(sample_id:  int, token_payload: Annotated[TokenPayload, Depends(g
     dbm_sample['gps'] = GpsModel(latitude=latitude, longitude=longitude)
     return dbm_sample
 
-@router.post('/samples', response_model = SampleBase)
+@router.post('/samples', response_model = SampleBase, tags=['samples'])
 def create_sample(
     create_request : CreateSampleRequest,
     token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]

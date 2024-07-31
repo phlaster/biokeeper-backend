@@ -69,3 +69,23 @@ class ResearchNewStatusResponse(BaseModel):
 
 class MyResearch(BaseModel):
     research_id: int
+
+
+class ResearchesCreatedByAdminResponse(ResearchBase):
+    status: str
+
+
+class AcceptedParticipantResponse(BaseModel):
+    user_id: int
+    username: str
+
+class PendingRequestResponse(BaseModel):
+    user_id: int
+    username: str
+
+class DeleteParticipantRequest(BaseModel):
+    participant_identifier : int | str
+
+    @field_validator('participant_identifier', mode="before")
+    def validate_participant_identifier(cls, v):
+        return validate_identifier(v, 'participant_identifier must be either an integer or a string')
