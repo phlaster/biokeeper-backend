@@ -12,14 +12,14 @@ from utils import get_admin, get_current_user, get_volunteer_or_admin
 
 from dependencies.identifiers_validators import research_identifier_validator_dependency
 
-router = APIRouter(tags=['researches'])
+router = APIRouter()
 
-@router.get('/researches', response_model=list[ResearchResponse])
+@router.get('/researches', response_model=list[ResearchResponse], tags=['researches'])
 def get_researches(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     all_researches = list(DBM.researches.get_all().values())
     return JSONResponse(status_code=status.HTTP_200_OK, content=all_researches)
 
-@router.get('/researches/{research_identifier}', response_model=ResearchResponse)
+@router.get('/researches/{research_identifier}', response_model=ResearchResponse, tags=['researches'])
 def get_research(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
@@ -62,7 +62,7 @@ def get_accepted_participants(research_identifier: Annotated[str, Depends(resear
     return accepted_participants
 
 
-@router.post('/researches/{research_identifier}/send_request')
+@router.post('/researches/{research_identifier}/send_request', tags=['researches'])
 def send_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], 
                 token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]
                 ):

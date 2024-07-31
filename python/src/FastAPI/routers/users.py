@@ -15,9 +15,9 @@ from utils import get_admin, get_current_user
 
 from dependencies.identifiers_validators import user_identifier_validator_dependency
 
-router = APIRouter(tags=['users'])
+router = APIRouter()
 
-@router.get('/users', response_model=list[UserResponse])
+@router.get('/users', response_model=list[UserResponse], tags=['users'])
 def get_users(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     users = list(DBM.users.get_all().values())
     return JSONResponse(status_code=status.HTTP_200_OK, content=users)
@@ -25,7 +25,7 @@ def get_users(token_payload: Annotated[TokenPayload, Depends(get_current_user)])
 
     
 
-@router.get('/users/{user_identifier}', response_model=UserResponse)
+@router.get('/users/{user_identifier}', response_model=UserResponse, tags=['users'])
 def get_user_by_identifier(token_payload: Annotated[TokenPayload, Depends(get_current_user)], user_identifier: Annotated[str, Depends(user_identifier_validator_dependency)]):
     """
     Returns user information for the specified user_id.
@@ -36,17 +36,17 @@ def get_user_by_identifier(token_payload: Annotated[TokenPayload, Depends(get_cu
         raise HTTPNotFoundException(detail=f"User {user_identifier} not found")
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_user)
 
-@router.get('/me/kits', response_model=list[MyKit])
+@router.get('/me/kits', response_model=list[MyKit], tags=['users'])
 def get_user_kits(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content=DBM.kits.get_kits_by_user_identifier(token_payload.id))
 
-@router.get('/me/samples', response_model=list[MySample])
+@router.get('/me/samples', response_model=list[MySample], tags=['users'])
 def get_user_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content=DBM.samples.get_samples_by_user_identifier(token_payload.id))
 
-@router.get('/me/researches', response_model=list[MyResearch])
+@router.get('/me/researches', response_model=list[MyResearch], tags=['users'])
 def get_user_researches(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content=DBM.researches.get_researches_by_user_identifier(token_payload.id))
@@ -58,7 +58,7 @@ def get_created_researches(token_payload: Annotated[TokenPayload, Depends(get_ad
     created_researches = DBM.researches.get_created_researches_by_user_identifier(token_payload.id)
     return created_researches
 
-@router.get('/me/admin/created_kits/', response_model=list[KitsCreatedByAdminResponse], tags=['admin_panel'])
+@router.get('/me/created_kits/', response_model=list[KitsCreatedByAdminResponse], tags=['admin_panel'])
 def get_created_kits(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     created_kits = DBM.kits.get_created_kits_by_user_identifier(token_payload.id)
     return created_kits

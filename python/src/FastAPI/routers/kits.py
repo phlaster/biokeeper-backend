@@ -12,14 +12,14 @@ from utils import get_current_user
 
 from dependencies.identifiers_validators import kit_identifier_validator_dependency
 
-router = APIRouter(tags=['kits'])
+router = APIRouter()
 
-@router.get('/kits', response_model=list[KitInfo])
+@router.get('/kits', response_model=list[KitInfo], tags=['kits'])
 def get_kits(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     all_kits = list(DBM.kits.get_all().values())
     return JSONResponse(status_code=status.HTTP_200_OK, content=all_kits)
 
-@router.get('/kits/{kit_identifier}', response_model=KitInfo)
+@router.get('/kits/{kit_identifier}', response_model=KitInfo, tags=['kits'])
 def get_kit(kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)], 
             token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]):
     try:
@@ -64,7 +64,7 @@ def update_owner(
     DBM.kits.send_kit(kit_info['id'], new_owner_id, log=True)
     return Response(status_code=status.HTTP_200_OK, content=f"Kit {kit_identifier} owner changed to {new_owner_id}")
     
-@router.put('/kits/{kit_identifier}/activate')
+@router.put('/kits/{kit_identifier}/activate', tags=['kits'])
 def activate_kit(
     kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)],
     token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]
