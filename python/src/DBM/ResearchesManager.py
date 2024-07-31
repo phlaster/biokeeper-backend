@@ -161,7 +161,7 @@ class ResearchesManager(AbstractDBManager):
     def get_pending_requests(self, research_id, log=False):
         with self.db as (conn, cursor):
             cursor.execute("""
-                SELECT urp.user_id, u.username as username
+                SELECT urp.user_id, u.name as username
                 FROM "user_research_pending" urp
                 LEFT JOIN "user" u ON urp.user_id = u.id
                 WHERE research_id = %s
@@ -176,7 +176,7 @@ class ResearchesManager(AbstractDBManager):
     def get_accepted_participants(self, research_id, log=False):
         with self.db as (conn, cursor):
             cursor.execute("""
-                SELECT ur.user_id, u.username as username
+                SELECT ur.user_id, u.name as username
                 FROM "user_research" ur
                 LEFT JOIN "user" u ON ur.user_id = u.id
                 WHERE research_id = %s
