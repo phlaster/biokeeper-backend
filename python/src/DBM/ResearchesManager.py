@@ -216,10 +216,9 @@ class ResearchesManager(AbstractDBManager):
             """, (user_identifier,))
             researches = cursor.fetchall()
             if researches:
-                researches = researches[0]
+                researches = [{'id': research[0], 'name': research[1], 'status': research[2]} for research in researches]
             else:
                 researches = []
-            researches = [{'research_id': research[0], 'research_name': research[1], 'research_status': research[2]} for research in researches]
         return researches
     
     

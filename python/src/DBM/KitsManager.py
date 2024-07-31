@@ -175,8 +175,7 @@ class KitsManager(AbstractDBManager):
             kits = cursor.fetchall()
 
             if kits:
-                kits = kits[0]
+                kits = [{'id': kit[0], 'n_qrs': kit[1], 'unique_hex': kit[2], 'created_at': kit[3], 'owner_id': kit[4], 'owner_name': kit[5]} for kit in kits]
             else:
                 kits = []
-            kits = [{'id': kit[0], 'n_qrs': kit[1], 'unique_hex': kit[2], 'created_at': kit[3], 'owner_id': kit[4], 'owner_name': kit[5]} for kit in kits]
         return kits
