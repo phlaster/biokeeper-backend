@@ -28,7 +28,7 @@ def get_research(research_identifier: Annotated[str, Depends(research_identifier
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_research)
 
 
-@router.get('/researches/{research_identifier}/pending_requests', response_model=list[PendingRequestResponse])
+@router.get('/researches/{research_identifier}/pending_requests', response_model=list[PendingRequestResponse], tags=['admin_panel'])
 def get_pending_requests(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
@@ -45,7 +45,7 @@ def get_pending_requests(research_identifier: Annotated[str, Depends(research_id
     return pending_requests
 
 
-@router.get('/researches/{research_identifier}/accepted_participants', response_model=list[AcceptedParticipantResponse])
+@router.get('/researches/{research_identifier}/accepted_participants', response_model=list[AcceptedParticipantResponse], tags=['admin_panel'])
 def get_accepted_participants(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
@@ -89,7 +89,7 @@ def send_request(research_identifier: Annotated[str, Depends(research_identifier
     return JSONResponse(status_code=status.HTTP_200_OK, content=f"User {token_payload.id} sent request to research {research_identifier}")
 
 
-@router.post('/researches/{research_identifier}/approve_request')
+@router.post('/researches/{research_identifier}/approve_request', tags=['admin_panel'])
 def approve_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], approve_research_request: ApproveResearchRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     candidate_identifier = approve_research_request.candidate_identifier
     try:
@@ -124,7 +124,7 @@ def approve_request(research_identifier: Annotated[str, Depends(research_identif
     DBM.researches.approve_request(research_id, candidate_id, log=False)
     return JSONResponse(status_code=status.HTTP_200_OK, content=f"User {candidate_id} approved request to research {research_identifier}")
 
-@router.post('/researches/{research_identifier}/decline_request')
+@router.post('/researches/{research_identifier}/decline_request', tags=['admin_panel'])
 def decline_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], decline_research_request: DeclineResearchRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     candidate_identifier = decline_research_request.candidate_identifier
     try:
@@ -161,7 +161,7 @@ def decline_request(research_identifier: Annotated[str, Depends(research_identif
                     content=f"User {candidate_id} declined request to research {research_identifier}")
 
 
-@router.delete('/researches/{research_identifier}/accepted_participants')
+@router.delete('/researches/{research_identifier}/accepted_participants', tags=['admin_panel'])
 def delete_accepted_participant(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], 
                                 token_payload: Annotated[TokenPayload, Depends(get_admin)],
                                 delete_participant_request: DeleteParticipantRequest
@@ -197,7 +197,7 @@ def delete_accepted_participant(research_identifier: Annotated[str, Depends(rese
     return Response(status_code=status.HTTP_200_OK, 
                     content=f"User {participant_id} removed from research {research_identifier}")
 
-@router.put('/researches/{research_identifier}/start', response_model=ResearchNewStatusResponse)
+@router.put('/researches/{research_identifier}/start', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
 def set_research_start(
         research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
         token_payload: Annotated[TokenPayload, Depends(get_admin)]
@@ -226,7 +226,7 @@ def set_research_start(
                                  "status": "ongoing"})
 
 
-@router.put('/researches/{research_identifier}/pause', response_model=ResearchNewStatusResponse)
+@router.put('/researches/{research_identifier}/pause', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
 def set_research_paused(
             research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
             token_payload: Annotated[TokenPayload, Depends(get_admin)]
@@ -258,7 +258,7 @@ def set_research_paused(
                                  "status": "paused"})
 
 
-@router.put('/researches/{research_identifier}/end', response_model=ResearchNewStatusResponse)
+@router.put('/researches/{research_identifier}/end', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
 def set_research_ended(
         research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
         token_payload: Annotated[TokenPayload, Depends(get_admin)]
@@ -287,7 +287,7 @@ def set_research_ended(
                                  "status": "ended"})
 
 
-@router.put('/researches/{research_identifier}/cancel', response_model=ResearchNewStatusResponse)
+@router.put('/researches/{research_identifier}/cancel', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
 def set_research_cancelled(
     research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
@@ -313,7 +313,7 @@ def set_research_cancelled(
                                  "status": "cancelled"})
 
 
-@router.post('/researches', response_model=ResearchBase)
+@router.post('/researches', response_model=ResearchBase, tags=['admin_panel'])
 def create_research(
     token_payload: Annotated[TokenPayload, Depends(get_admin)],
     create_research_request : CreateResearchRequest

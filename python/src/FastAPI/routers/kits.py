@@ -30,7 +30,7 @@ def get_kit(kit_identifier: Annotated[str, Depends(kit_identifier_validator_depe
         raise HTTPForbiddenException(detail=f'Kit {kit_identifier} is not owned by user {token_payload.id}')
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_kit)
 
-@router.put('/kits/{kit_identifier}/send')
+@router.put('/kits/{kit_identifier}/send', tags=['admin_panel'])
 def update_owner(
     token_payload: Annotated[TokenPayload, Depends(get_admin)],
     kit_identifier: Annotated[str, Depends(kit_identifier_validator_dependency)],
@@ -84,7 +84,7 @@ def activate_kit(
 
     return Response(status_code=status.HTTP_200_OK, content=f"Kit {kit_identifier} is activated")
     
-@router.post('/kits', response_model=KitInfo)
+@router.post('/kits', response_model=KitInfo, tags=['admin_panel'])
 def create_kit(create_kit_request: CreateKitRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     kit_id = DBM.kits.new(create_kit_request.n_qrs, token_payload.id, log=True)
     kit_info = DBM.kits.get_info(kit_id)

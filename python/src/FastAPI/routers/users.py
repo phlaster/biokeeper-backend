@@ -36,29 +36,29 @@ def get_user_by_identifier(token_payload: Annotated[TokenPayload, Depends(get_cu
         raise HTTPNotFoundException(detail=f"User {user_identifier} not found")
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_user)
 
-@router.get('/users/me/kits', response_model=list[MyKit])
+@router.get('/me/kits', response_model=list[MyKit])
 def get_user_kits(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content=DBM.kits.get_kits_by_user_identifier(token_payload.id))
 
-@router.get('/users/me/samples', response_model=list[MySample])
+@router.get('/me/samples', response_model=list[MySample])
 def get_user_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content=DBM.samples.get_samples_by_user_identifier(token_payload.id))
 
-@router.get('/users/me/researches', response_model=list[MyResearch])
+@router.get('/me/researches', response_model=list[MyResearch])
 def get_user_researches(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content=DBM.researches.get_researches_by_user_identifier(token_payload.id))
 
 
 
-@router.get('/users/me/admin/created_researches/', response_model=list[ResearchesCreatedByAdminResponse])
+@router.get('/me/created_researches/', response_model=list[ResearchesCreatedByAdminResponse], tags=['admin_panel'])
 def get_created_researches(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     created_researches = DBM.researches.get_created_researches_by_user_identifier(token_payload.id)
     return created_researches
 
-@router.get('/users/me/admin/created_kits/', response_model=list[KitsCreatedByAdminResponse])
+@router.get('/me/admin/created_kits/', response_model=list[KitsCreatedByAdminResponse], tags=['admin_panel'])
 def get_created_kits(token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     created_kits = DBM.kits.get_created_kits_by_user_identifier(token_payload.id)
     return created_kits
