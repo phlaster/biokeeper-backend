@@ -210,8 +210,9 @@ class ResearchesManager(AbstractDBManager):
 
         with self.db as (conn, cursor):
             cursor.execute("""
-                SELECT id, name, status
-                FROM "research"
+                SELECT r.id, r.name, rs.details.key as status
+                FROM "research" r
+                LEFT JOIN "research_statuses" rs ON r.status = rs.id
                 WHERE created_by = %s
             """, (user_identifier,))
             researches = cursor.fetchall()
