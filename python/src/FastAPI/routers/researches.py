@@ -21,7 +21,6 @@ def get_researches(token_payload: Annotated[TokenPayload, Depends(get_current_us
 
 @router.get('/researches/{research_identifier}', response_model=ResearchResponse)
 def get_research(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
-    print(research_identifier)
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
     except NoResearchException:
