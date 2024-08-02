@@ -74,7 +74,7 @@ def create_sample(
         raise HTTPForbiddenException(msg=f"User does not own kit",data={'kit_id': dbm_qr_info['kit_id'],'user_id': token_payload.id})
     
     if not dbm_kit['status'] == 'activated':
-        raise HTTPConflictException(msg=f'Kit hasn\'t been activated',data={'kit_id': dbm_kit["id"]}
+        raise HTTPConflictException(msg=f'Kit hasn\'t been activated',data={'kit_id': dbm_kit["id"]})
 
 
     dbm_new_sample_id = DBM.samples.new(qr_id=int(dbm_qr_info['id']), 
