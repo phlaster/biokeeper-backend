@@ -216,8 +216,8 @@ def set_research_start(
     if research_info['status'] == 'ended':
         raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
     
-    if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(detail=f'Research {research_identifier} is cancelled')
+    if research_info['status'] == 'canceled':
+        raise HTTPConflictException(detail=f'Research {research_identifier} is canceled')
     
     DBM.researches.change_status(research_identifier, new_status="ongoing", log=True)
 
@@ -248,8 +248,8 @@ def set_research_paused(
     if research_info['status'] == 'ended':
         raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
     
-    if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(detail=f'Research {research_identifier} is cancelled')
+    if research_info['status'] == 'canceled':
+        raise HTTPConflictException(detail=f'Research {research_identifier} is canceled')
 
     DBM.researches.change_status(research_identifier, new_status="paused", log=True)
 
@@ -277,8 +277,8 @@ def set_research_ended(
     if research_info['status'] == 'ended':
         raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
     
-    if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(detail=f'Research {research_identifier} is cancelled')
+    if research_info['status'] == 'canceled':
+        raise HTTPConflictException(detail=f'Research {research_identifier} is canceled')
     
     DBM.researches.change_status(research_identifier, new_status="ended", log=True)
     
@@ -288,7 +288,7 @@ def set_research_ended(
 
 
 @router.put('/researches/{research_identifier}/cancel', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
-def set_research_cancelled(
+def set_research_canceled(
     research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
 ):
@@ -300,17 +300,17 @@ def set_research_cancelled(
     if token_payload.id != research_info['created_by']:
         raise HTTPForbiddenException(detail=f'Research owner differs from autorized user')
     
-    if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(detail=f'Research {research_identifier} already cancelled')
+    if research_info['status'] == 'canceled':
+        raise HTTPConflictException(detail=f'Research {research_identifier} already canceled')
     
     if research_info['status'] == 'ended':
         raise HTTPConflictException(detail=f'Research {research_identifier} already ended')
     
-    DBM.researches.change_status(research_identifier, new_status="cancelled", log=True)
+    DBM.researches.change_status(research_identifier, new_status="canceled", log=True)
     
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content={"research_identifier": research_identifier, 
-                                 "status": "cancelled"})
+                                 "status": "canceled"})
 
 
 @router.post('/researches', response_model=ResearchBase, tags=['admin_panel'])
