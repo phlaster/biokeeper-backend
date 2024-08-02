@@ -33,7 +33,7 @@ def get_user_by_identifier(token_payload: Annotated[TokenPayload, Depends(get_cu
     try:
         dbm_user = DBM.users.get_info(user_identifier)
     except NoUserException:
-        raise HTTPNotFoundException(detail=f"User {user_identifier} not found")
+        raise HTTPNotFoundException(msg=f"User not found",data={'user_identifier': user_identifier})
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_user)
 
 @router.get('/me/kits', response_model=list[MyKit], tags=['users'])
