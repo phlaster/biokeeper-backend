@@ -291,6 +291,7 @@ def set_research_start(
     
     if research_info['status'] == 'canceled':
         raise HTTPConflictException(msg=f'Research is canceled',data={'research_identifier': research_identifier})
+
     
     DBM.researches.change_status(research_identifier, new_status="ongoing", log=True)
 
