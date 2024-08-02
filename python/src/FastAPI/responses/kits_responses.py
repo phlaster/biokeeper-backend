@@ -1,10 +1,7 @@
-from typing import Any
-from pydantic import BaseModel, Field
+from pydantic import Field
 from responses.base import BasicConflictResponse, BasicNotFoundResponse, BasicForbiddenResponse
 
 from config import MAX_NUMBER_OF_QRS
-
-from db_manager import DBM
 
 class KitNotFoundResponse(BasicNotFoundResponse):
     msg: str = Field(..., example="Kit not found")
