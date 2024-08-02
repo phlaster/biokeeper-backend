@@ -27,7 +27,7 @@ def existing_statuses(DBM):
     assert DBM.researches.has_status('ongoing')
     assert DBM.researches.has_status('paused')
     assert DBM.researches.has_status('ended')
-    assert DBM.researches.has_status('cancelled')
+    assert DBM.researches.has_status('canceled')
     assert not DBM.researches.has_status("wrongstatus")
 
     assert DBM.samples.has_status("collected")

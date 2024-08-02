@@ -289,7 +289,7 @@ def set_research_start(
     if research_info['status'] == 'ended':
         raise HTTPConflictException(msg=f'Research already ended',data={'research_identifier': research_identifier})
     
-    if research_info['status'] == 'cancelled':
+    if research_info['status'] == 'canceled':
         raise HTTPConflictException(msg=f'Research is canceled',data={'research_identifier': research_identifier})
     
     DBM.researches.change_status(research_identifier, new_status="ongoing", log=True)
@@ -332,8 +332,8 @@ def set_research_paused(
     if research_info['status'] == 'ended':
         raise HTTPConflictException(msg=f'Research already ended',data={'research_identifier': research_identifier})
     
-    if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(msg=f'Research is cancelled',data={'research_identifier': research_identifier})
+    if research_info['status'] == 'canceled':
+        raise HTTPConflictException(msg=f'Research is canceled',data={'research_identifier': research_identifier})
 
     DBM.researches.change_status(research_identifier, new_status="paused", log=True)
 
@@ -371,8 +371,8 @@ def set_research_ended(
     if research_info['status'] == 'ended':
         raise HTTPConflictException(msg=f'Research already ended',data={'research_identifier': research_identifier})
     
-    if research_info['status'] == 'cancelled':
-        raise HTTPConflictException(msg=f'Research is cancelled',data={'research_identifier': research_identifier})
+    if research_info['status'] == 'canceled':
+        raise HTTPConflictException(msg=f'Research is canceled',data={'research_identifier': research_identifier})
     
     DBM.researches.change_status(research_identifier, new_status="ended", log=True)
     
@@ -390,7 +390,7 @@ def set_research_ended(
                 researches_responses.ResearchAlreadyEndedResponse
                 )
             )
-def set_research_cancelled(
+def set_research_canceled(
     research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
 ):
@@ -402,17 +402,17 @@ def set_research_cancelled(
     if token_payload.id != research_info['created_by']:
         raise HTTPForbiddenException(msg=f'Research owner differs from autorized user')
     
-    if research_info['status'] == 'cancelled':
+    if research_info['status'] == 'canceled':
         raise HTTPConflictException(msg=f'Research is canceled',data={'research_identifier': research_identifier})
     
     if research_info['status'] == 'ended':
         raise HTTPConflictException(msg=f'Research already ended',data={'research_identifier': research_identifier})
     
-    DBM.researches.change_status(research_identifier, new_status="cancelled", log=True)
+    DBM.researches.change_status(research_identifier, new_status="canceled", log=True)
     
     return JSONResponse(status_code=status.HTTP_200_OK, 
                         content={"research_identifier": research_identifier, 
-                                 "status": "cancelled"})
+                                 "status": "canceled"})
 
 
 @router.post('/researches', 
