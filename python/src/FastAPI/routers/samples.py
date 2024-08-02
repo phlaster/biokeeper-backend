@@ -26,7 +26,11 @@ def get_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)
 @router.get('/samples/{sample_id}',
             response_model = SampleInfo,
             tags=['samples'],
-            responses=generate_responses(samples_responses.SampleNotFoundResponse,samples_responses.SampleNotOwnerResponse))
+            responses=generate_responses(
+                samples_responses.SampleNotFoundResponse,
+                samples_responses.SampleNotOwnerResponse
+                )
+            )
 def get_sample(sample_id:  int, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     try:
         dbm_sample = DBM.samples.get_info(sample_id)
@@ -40,19 +44,21 @@ def get_sample(sample_id:  int, token_payload: Annotated[TokenPayload, Depends(g
     return dbm_sample
 
 @router.post('/samples',
-             response_model = SampleBase,
-             tags=['samples'],
-             responses=generate_responses(samples_responses.ResearchWithIDNotFoundResponse,
-                                          samples_responses.UserNotInResearchResponse,
-                                          samples_responses.ResearchNotOngoingResponse,
-                                          samples_responses.QRNotFoundResponse,
-                                          samples_responses.QRAlreadyUsedResponse,
-                                          samples_responses.QRIsNotAssignedToKitResponse,
-                                          samples_responses.KitNotFoundResponse,
-                                          samples_responses.KitIsNotAssignedToUserResponse,
-                                          samples_responses.UserDoesNotOwnKitResponse,
-                                          samples_responses.KitDoesNotActivatedResponse
-                                          ))
+            response_model = SampleBase,
+            tags=['samples'],
+            responses=generate_responses(
+                samples_responses.ResearchWithIDNotFoundResponse,
+                samples_responses.UserNotInResearchResponse,
+                samples_responses.ResearchNotOngoingResponse,
+                samples_responses.QRNotFoundResponse,
+                samples_responses.QRAlreadyUsedResponse,
+                samples_responses.QRIsNotAssignedToKitResponse,
+                samples_responses.KitNotFoundResponse,
+                samples_responses.KitIsNotAssignedToUserResponse,
+                samples_responses.UserDoesNotOwnKitResponse,
+                samples_responses.KitIsNotActivatedResponse
+                )
+            )
 def create_sample(
     create_request : CreateSampleRequest,
     token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]
@@ -60,7 +66,7 @@ def create_sample(
     try:
         dbm_research = DBM.researches.get_info(create_request.research_id)
     except NoResearchException:
-        raise HTTPNotFoundException(msg=f'Research with id not found',data={'research_id': create_request.research_id})
+        raise HTTPNotFoundException(msg=f'Research with this id not found',data={'research_id': create_request.research_id})
     
     if dbm_research['approval_required']:
         user_researches = DBM.users.get_user_participated_researches(token_payload.id)
@@ -68,7 +74,7 @@ def create_sample(
             raise HTTPForbiddenException(msg=f"User does not participate in research",data={'research_id': dbm_research['id'],'user_id': token_payload.id})
         
     if not dbm_research['status'] != 'ongoing':
-        raise HTTPConflictException(msg=f"Research is not in \"ongoing\" status.",data={'research_id': dbm_research['id']})
+        raise HTTPConflictException(msg='Research is not in ongoing status',data={'research_id': dbm_research['id']})
 
     try:
         dbm_qr_info = DBM.samples.get_qr_info(create_request.qr_hex)
@@ -84,7 +90,7 @@ def create_sample(
     try:
         dbm_kit = DBM.kits.get_info(dbm_qr_info['kit_id'])
     except NoQrCodeException:
-        raise HTTPNotFoundException(msg=f'No kit with id found (very strange).',data={'kit_id': dbm_qr_info['kit_id']})
+        raise HTTPNotFoundException(msg=f'Kit not found (very strange)',data={'kit_id': dbm_qr_info['kit_id']})
     
     if not dbm_kit['owner']:
         raise HTTPForbiddenException(msg=f'Kit is not assigned to any user',data={'kit_id': dbm_qr_info['kit_id']})
@@ -93,7 +99,7 @@ def create_sample(
         raise HTTPForbiddenException(msg=f"User does not own kit",data={'kit_id': dbm_qr_info['kit_id'],'user_id': token_payload.id})
     
     if not dbm_kit['status'] == 'activated':
-        raise HTTPConflictException(msg=f'Kit hasn\'t been activated',data={'kit_id': dbm_kit["id"]})
+        raise HTTPConflictException(msg=f"Kit hasn't been activated",data={'kit_id': dbm_kit["id"]})
 
 
     dbm_new_sample_id = DBM.samples.new(qr_id=int(dbm_qr_info['id']), 

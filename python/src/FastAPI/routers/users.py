@@ -28,7 +28,10 @@ def get_users(token_payload: Annotated[TokenPayload, Depends(get_current_user)])
 
     
 
-@router.get('/users/{user_identifier}', response_model=UserResponse, tags=['users'],responses=users_responses.UserNotFoundResponse)
+@router.get('/users/{user_identifier}', response_model=UserResponse, 
+            tags=['users'],
+            responses=users_responses.UserNotFoundResponse
+        )
 def get_user_by_identifier(token_payload: Annotated[TokenPayload, Depends(get_current_user)], user_identifier: Annotated[str, Depends(user_identifier_validator_dependency)]):
     """
     Returns user information for the specified user_id.

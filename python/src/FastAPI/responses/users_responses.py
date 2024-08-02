@@ -3,4 +3,4 @@ from responses.base import BasicConflictResponse, BasicNotFoundResponse, BasicFo
 
 class UserNotFoundResponse(BasicNotFoundResponse):
     msg: str = Field(..., example="User not found")
-    data: dict | None = Field(..., example={'user_id': 5})
+    data: dict | None = Field(..., example={'user_identifier': 5})
