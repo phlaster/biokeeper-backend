@@ -15,6 +15,9 @@ from utils import get_admin, get_current_user
 
 from dependencies.identifiers_validators import user_identifier_validator_dependency
 
+from responses import users_responses
+from responses.base import generate_responses
+
 router = APIRouter()
 
 @router.get('/users', response_model=list[UserResponse], tags=['users'])
@@ -25,7 +28,12 @@ def get_users(token_payload: Annotated[TokenPayload, Depends(get_current_user)])
 
     
 
-@router.get('/users/{user_identifier}', response_model=UserResponse, tags=['users'])
+@router.get('/users/{user_identifier}', response_model=UserResponse, 
+            tags=['users'],
+            responses=generate_responses(
+                users_responses.UserNotFoundResponse
+            )
+        )
 def get_user_by_identifier(token_payload: Annotated[TokenPayload, Depends(get_current_user)], user_identifier: Annotated[str, Depends(user_identifier_validator_dependency)]):
     """
     Returns user information for the specified user_id.
@@ -33,8 +41,8 @@ def get_user_by_identifier(token_payload: Annotated[TokenPayload, Depends(get_cu
     try:
         dbm_user = DBM.users.get_info(user_identifier)
     except NoUserException:
-        raise HTTPNotFoundException(detail=f"User {user_identifier} not found")
-    return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_user)
+        raise HTTPNotFoundException(msg=f"User not found",data={'user_identifier': user_identifier})
+    return dbm_user
 
 @router.get('/me/kits', response_model=list[MyKit], tags=['users'])
 def get_user_kits(token_payload: Annotated[TokenPayload, Depends(get_current_user)]):

@@ -1,4 +1,6 @@
+from typing import Any
 from fastapi import HTTPException, status
+
 class NotFoundException(Exception):
     pass
 
@@ -17,25 +19,25 @@ class NoResearchException(NotFoundException):
 class NoKitException(NotFoundException):
     pass
 
-class HTTPForbiddenException(HTTPException):
-    status_code = status.HTTP_403_FORBIDDEN
-    def __init__(self, *args, **kwargs):
-        super().__init__(status_code=self.status_code, *args, **kwargs)
-        
+class CustomHTTPException(HTTPException):
+    def __init__(self, status_code: int, msg: str, data: dict[str, Any] = None):
+        super().__init__(status_code=status_code, detail={"msg": msg, "data": data})
 
-class HTTPNotFoundException(HTTPException):
-    status_code = status.HTTP_404_NOT_FOUND
-    def __init__(self, *args, **kwargs):
-        super().__init__(status_code=self.status_code, *args, **kwargs)
+class HTTPForbiddenException(CustomHTTPException):
+    def __init__(self, msg: str, data: dict[str, Any] = None):
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, msg=msg, data=data)
 
-class HTTPConflictException(HTTPException):
-    status_code = status.HTTP_409_CONFLICT
-    def __init__(self, *args, **kwargs):
-        super().__init__(status_code=self.status_code, *args, **kwargs)
+class HTTPNotFoundException(CustomHTTPException):
+    def __init__(self, msg: str, data: dict[str, Any] = None):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, msg=msg, data=data)
 
+class HTTPConflictException(CustomHTTPException):
+    def __init__(self, msg: str, data: dict[str, Any] = None):
+        super().__init__(status_code=status.HTTP_409_CONFLICT, msg=msg, data=data)
 
 class HTTPNotEnoughPermissionsException(HTTPException):
         status_code=status.HTTP_403_FORBIDDEN
         detail = "Not enough permissions"
         def __init__(self, detail, *args, **kwargs):
             super().__init__(status_code=self.status_code, detail=detail, *args, **kwargs)
+
