@@ -89,9 +89,9 @@ def activate_kit(
 @router.post('/kits', response_model=KitInfo, tags=['admin_panel'])
 def create_kit(create_kit_request: CreateKitRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     if create_kit_request.n_qrs <= 0:
-        raise HTTPConflictException(msg=f'Number of QRS should be positive')
-    if create_kit_request.n_qrs > 100:
-        raise HTTPConflictException(msg=f'Number of QRS should be less than 100')
+        raise HTTPConflictException(msg=f'Number of QRs must be greater than zero')
+    if create_kit_request.n_qrs > MAX_NUMBER_OF_QRS:
+        raise HTTPConflictException(msg=f'Number of QRs is too big', data={'max_number_of_qrs': MAX_NUMBER_OF_QRS})
     kit_id = DBM.kits.new(create_kit_request.n_qrs, token_payload.id, log=True)
     kit_info = DBM.kits.get_info(kit_id)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=kit_info)
