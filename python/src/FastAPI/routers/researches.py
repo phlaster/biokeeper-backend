@@ -10,6 +10,9 @@ from schemas.researches import AcceptedParticipantResponse, ApproveResearchReque
 from schemas.common import TokenPayload
 from utils import get_admin, get_current_user, get_volunteer_or_admin
 
+from responses import researches_responses
+from responses.base import generate_responses
+
 from dependencies.identifiers_validators import research_identifier_validator_dependency
 
 router = APIRouter()

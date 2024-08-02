@@ -15,6 +15,9 @@ from utils import get_admin, get_current_user
 
 from dependencies.identifiers_validators import user_identifier_validator_dependency
 
+from responses import users_responses
+from responses.base import generate_responses
+
 router = APIRouter()
 
 @router.get('/users', response_model=list[UserResponse], tags=['users'])
