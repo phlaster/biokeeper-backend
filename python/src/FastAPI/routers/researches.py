@@ -22,7 +22,10 @@ def get_researches(token_payload: Annotated[TokenPayload, Depends(get_current_us
     all_researches = list(DBM.researches.get_all().values())
     return JSONResponse(status_code=status.HTTP_200_OK, content=all_researches)
 
-@router.get('/researches/{research_identifier}', response_model=ResearchResponse, tags=['researches'])
+@router.get('/researches/{research_identifier}',
+            response_model=ResearchResponse,
+            tags=['researches'],
+            responses=generate_responses(researches_responses.ResearchNotFoundResponse))
 def get_research(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
@@ -31,7 +34,10 @@ def get_research(research_identifier: Annotated[str, Depends(research_identifier
     return JSONResponse(status_code=status.HTTP_200_OK, content=dbm_research)
 
 
-@router.get('/researches/{research_identifier}/pending_requests', response_model=list[PendingRequestResponse], tags=['admin_panel'])
+@router.get('/researches/{research_identifier}/pending_requests',
+            response_model=list[PendingRequestResponse],
+            tags=['admin_panel'],
+            responses=generate_responses(researches_responses.ResearchNotFoundResponse, researches_responses.UserIsNotCreatorOfTheResearchResponse, researches_responses.ApprovalIsNotRequiredResponse))
 def get_pending_requests(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
@@ -48,7 +54,10 @@ def get_pending_requests(research_identifier: Annotated[str, Depends(research_id
     return pending_requests
 
 
-@router.get('/researches/{research_identifier}/accepted_participants', response_model=list[AcceptedParticipantResponse], tags=['admin_panel'])
+@router.get('/researches/{research_identifier}/accepted_participants',
+            response_model=list[AcceptedParticipantResponse],
+            tags=['admin_panel'],
+            responses=generate_responses(researches_responses.ResearchNotFoundResponse, researches_responses.UserIsNotCreatorOfTheResearchResponse, researches_responses.ApprovalIsNotRequiredResponse))
 def get_accepted_participants(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     try:
         dbm_research = DBM.researches.get_info(research_identifier)
@@ -65,7 +74,13 @@ def get_accepted_participants(research_identifier: Annotated[str, Depends(resear
     return accepted_participants
 
 
-@router.post('/researches/{research_identifier}/send_request', tags=['researches'])
+@router.post('/researches/{research_identifier}/send_request',
+             tags=['researches'],
+             responses=generate_responses(researches_responses.ResearchNotFoundResponse,
+                                        researches_responses.ApprovalIsNotRequiredResponse,
+                                        researches_responses.ResearchAlreadyEndedResponse,
+                                        researches_responses.UserAlreadyParticipateInResearchResponse,
+                                        researches_responses.UserAlreadySentRequestResponse))
 def send_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], 
                 token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]
                 ):
@@ -92,7 +107,15 @@ def send_request(research_identifier: Annotated[str, Depends(research_identifier
     return JSONResponse(status_code=status.HTTP_200_OK, content=f"User {token_payload.id} sent request to research {research_identifier}")
 
 
-@router.post('/researches/{research_identifier}/approve_request', tags=['admin_panel'])
+@router.post('/researches/{research_identifier}/approve_request',
+             tags=['admin_panel'],
+             responses=generate_responses(researches_responses.ResearchNotFoundResponse,
+                                           researches_responses.UserIsNotCreatorOfTheResearchResponse,
+                                           researches_responses.ApprovalIsNotRequiredResponse,
+                                           researches_responses.ResearchAlreadyEndedResponse,
+                                           researches_responses.UserNotFoundResponse,
+                                           researches_responses.UserAlreadyParticipateInResearchResponse,
+                                           researches_responses.UserNotSentRequestResponse))
 def approve_request(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], approve_research_request: ApproveResearchRequest, token_payload: Annotated[TokenPayload, Depends(get_admin)]):
     candidate_identifier = approve_research_request.candidate_identifier
     try:
@@ -164,7 +187,15 @@ def decline_request(research_identifier: Annotated[str, Depends(research_identif
                     content=f"User {candidate_id} declined request to research {research_identifier}")
 
 
-@router.delete('/researches/{research_identifier}/accepted_participants', tags=['admin_panel'])
+@router.delete('/researches/{research_identifier}/accepted_participants',
+               tags=['admin_panel'],
+               responses=generate_responses(researches_responses.ResearchNotFoundResponse,
+                                            researches_responses.UserIsNotCreatorOfTheResearchResponse,
+                                            researches_responses.ApprovalIsNotRequiredResponse,
+                                            researches_responses.ResearchAlreadyEndedResponse,
+                                            researches_responses.UserNotFoundResponse,
+                                            researches_responses.UserNotParticipateInResearchResponse
+               ))
 def delete_accepted_participant(research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)], 
                                 token_payload: Annotated[TokenPayload, Depends(get_admin)],
                                 delete_participant_request: DeleteParticipantRequest
@@ -200,7 +231,14 @@ def delete_accepted_participant(research_identifier: Annotated[str, Depends(rese
     return Response(status_code=status.HTTP_200_OK, 
                     content=f"User {participant_id} removed from research {research_identifier}")
 
-@router.put('/researches/{research_identifier}/start', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
+@router.put('/researches/{research_identifier}/start',
+            response_model=ResearchNewStatusResponse,
+            tags=['admin_panel'],
+            responses=generate_responses(researches_responses.ResearchNotFoundResponse,
+                                         researches_responses.ResearchNotOwnerResponse,
+                                         researches_responses.ResearchAlreadyOnGoingResponse,
+                                         researches_responses.ResearchAlreadyEndedResponse,
+                                         researches_responses.ResearchAlreadyCanceledResponse))
 def set_research_start(
         research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
         token_payload: Annotated[TokenPayload, Depends(get_admin)]
@@ -229,7 +267,15 @@ def set_research_start(
                                  "status": "ongoing"})
 
 
-@router.put('/researches/{research_identifier}/pause', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
+@router.put('/researches/{research_identifier}/pause',
+            response_model=ResearchNewStatusResponse,
+            tags=['admin_panel'],
+            responses=generate_responses(researches_responses.ResearchNotFoundResponse,
+                                         researches_responses.ResearchNotOwnerResponse,
+                                         researches_responses.ResearchNotStartedResponse,
+                                         researches_responses.ResearchAlreadyPausedResponse,
+                                         researches_responses.ResearchAlreadyEndedResponse,
+                                         researches_responses.ResearchAlreadyCanceledResponse))
 def set_research_paused(
             research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
             token_payload: Annotated[TokenPayload, Depends(get_admin)]
@@ -261,7 +307,14 @@ def set_research_paused(
                                  "status": "paused"})
 
 
-@router.put('/researches/{research_identifier}/end', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
+@router.put('/researches/{research_identifier}/end',
+            response_model=ResearchNewStatusResponse,
+            tags=['admin_panel'],
+            responses=generate_responses(researches_responses.ResearchNotFoundResponse,
+                                         researches_responses.ResearchNotOwnerResponse,
+                                         researches_responses.ResearchNotStartedResponse,
+                                         researches_responses.ResearchAlreadyEndedResponse,
+                                         researches_responses.ResearchAlreadyCanceledResponse))
 def set_research_ended(
         research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
         token_payload: Annotated[TokenPayload, Depends(get_admin)]
@@ -290,7 +343,12 @@ def set_research_ended(
                                  "status": "ended"})
 
 
-@router.put('/researches/{research_identifier}/cancel', response_model=ResearchNewStatusResponse, tags=['admin_panel'])
+@router.put('/researches/{research_identifier}/cancel',
+            response_model=ResearchNewStatusResponse,
+            tags=['admin_panel'],responses=generate_responses(researches_responses.ResearchNotFoundResponse,
+                                                              researches_responses.ResearchNotOwnerResponse,
+                                                              researches_responses.ResearchAlreadyCanceledResponse,
+                                                              researches_responses.ResearchAlreadyEndedResponse))
 def set_research_cancelled(
     research_identifier: Annotated[str, Depends(research_identifier_validator_dependency)],
     token_payload: Annotated[TokenPayload, Depends(get_admin)]
@@ -316,7 +374,9 @@ def set_research_cancelled(
                                  "status": "cancelled"})
 
 
-@router.post('/researches', response_model=ResearchBase, tags=['admin_panel'])
+@router.post('/researches', 
+             response_model=ResearchBase,
+             tags=['admin_panel'],responses=generate_responses(researches_responses.ResearchAlreadyExistsResponse))
 def create_research(
     token_payload: Annotated[TokenPayload, Depends(get_admin)],
     create_research_request : CreateResearchRequest

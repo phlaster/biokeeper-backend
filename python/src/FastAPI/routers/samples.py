@@ -23,7 +23,10 @@ def get_samples(token_payload: Annotated[TokenPayload, Depends(get_current_user)
         sample['gps'] = GpsModel(latitude=latitude, longitude=longitude)
     return all_samples
 
-@router.get('/samples/{sample_id}', response_model = SampleInfo, tags=['samples'])
+@router.get('/samples/{sample_id}',
+            response_model = SampleInfo,
+            tags=['samples'],
+            responses=generate_responses(samples_responses.SampleNotFoundResponse,samples_responses.SampleNotOwnerResponse))
 def get_sample(sample_id:  int, token_payload: Annotated[TokenPayload, Depends(get_current_user)]):
     try:
         dbm_sample = DBM.samples.get_info(sample_id)
@@ -36,7 +39,20 @@ def get_sample(sample_id:  int, token_payload: Annotated[TokenPayload, Depends(g
     dbm_sample['gps'] = GpsModel(latitude=latitude, longitude=longitude)
     return dbm_sample
 
-@router.post('/samples', response_model = SampleBase, tags=['samples'])
+@router.post('/samples',
+             response_model = SampleBase,
+             tags=['samples'],
+             responses=generate_responses(samples_responses.ResearchWithIDNotFoundResponse,
+                                          samples_responses.UserNotInResearchResponse,
+                                          samples_responses.ResearchNotOngoingResponse,
+                                          samples_responses.QRNotFoundResponse,
+                                          samples_responses.QRAlreadyUsedResponse,
+                                          samples_responses.QRIsNotAssignedToKitResponse,
+                                          samples_responses.KitNotFoundResponse,
+                                          samples_responses.KitIsNotAssignedToUserResponse,
+                                          samples_responses.UserDoesNotOwnKitResponse,
+                                          samples_responses.KitDoesNotActivatedResponse
+                                          ))
 def create_sample(
     create_request : CreateSampleRequest,
     token_payload: Annotated[TokenPayload, Depends(get_volunteer_or_admin)]
