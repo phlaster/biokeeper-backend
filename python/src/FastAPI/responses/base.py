@@ -17,16 +17,46 @@ class BasicConflictResponse(BasicResponse):
     @staticmethod
     def get_status_code() -> int:
         return status.HTTP_409_CONFLICT
+    
+    @staticmethod
+    def get_description() -> str:
+        return "Conflict"
+    
+class BasicBadRequestResponse(BasicResponse):
+    @staticmethod
+    def get_status_code() -> int:
+        return status.HTTP_400_BAD_REQUEST
+    
+    @staticmethod
+    def get_description() -> str:
+        return "Bad request"
 
 class BasicNotFoundResponse(BasicResponse):
     @staticmethod
     def get_status_code() -> int:
         return status.HTTP_404_NOT_FOUND
+    
+    @staticmethod
+    def get_description() -> str:
+        return "Not found"
 
 class BasicForbiddenResponse(BasicResponse):
     @staticmethod
     def get_status_code() -> int:
         return status.HTTP_403_FORBIDDEN
+    
+    @staticmethod
+    def get_description() -> str:
+        return "Forbidden"
+    
+class BasicUnauthorizedResponse(BasicResponse):
+    @staticmethod
+    def get_status_code() -> int:
+        return status.HTTP_401_UNAUTHORIZED
+    
+    @staticmethod
+    def get_description() -> str:
+        return "Unauthorized"
 
 def generate_examples(*models: Type[BasicResponse]):
     examples = dict()
@@ -42,36 +72,15 @@ def generate_examples(*models: Type[BasicResponse]):
 
 def generate_responses(*models: Type[BasicResponse]):
     responses = dict()
-    confilict_models = [model for model in models if model.get_status_code() == status.HTTP_409_CONFLICT]
-    not_found_models = [model for model in models if model.get_status_code() == status.HTTP_404_NOT_FOUND]
-    forbidden_models = [model for model in models if model.get_status_code() == status.HTTP_403_FORBIDDEN]
+    codes_data = set((model.get_status_code(), model.get_description()) for model in models)
 
-    if confilict_models:
-        responses['409'] = {
-            'description': 'Conflict',
+    for code, description in codes_data:
+        code_models = [model for model in models if model.get_status_code() == code]
+        responses[code] = {
+            'description': description,
             'content': {
                 'application/json': {
-                    'examples': generate_examples(*confilict_models)
-                }
-            }
-        }
-    
-    if not_found_models:
-        responses['404'] = {
-            'description': 'Not found',
-            'content': {
-                'application/json': {
-                    'examples': generate_examples(*not_found_models)
-                }
-            }
-        }
-
-    if forbidden_models:
-        responses['403'] = {
-            'description': 'Forbidden',
-            'content': {
-                'application/json': {
-                    'examples': generate_examples(*forbidden_models)
+                    'examples': generate_examples(*code_models)
                 }
             }
         }
