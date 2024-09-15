@@ -8,7 +8,7 @@ VALUES
     (ROW('ongoing', 'The research is on', 0)),
     (ROW('paused', 'The research has been paused', 0)),
     (ROW('ended', 'The research has ended', 0)),
-    (ROW('cancelled', 'The research has been cancelled', 0));
+    (ROW('canceled', 'The research has been canceled', 0));
 
 CREATE TABLE "research" (
     id SERIAL PRIMARY KEY,

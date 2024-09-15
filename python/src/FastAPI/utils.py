@@ -8,7 +8,7 @@ from exceptions import NoUserException, HTTPNotEnoughPermissionsException
 import jwt
 
 
-external_token_url = "http://127.0.0.1:1337/token"
+external_token_url = "https://auth.biokeeper.ru/token"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=external_token_url)
 
 

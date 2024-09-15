@@ -128,7 +128,7 @@ class ResearchesManager(AbstractDBManager):
         log and self.logger.log(f"Info : Now research #{research_id} ends on {day_end}", research_id)
         return research_id
     
-    def get_participants(self, research_id, log=False):
+    def get_participants_ids(self, research_id, log=False):
         with self.db as (conn, cursor):
             cursor.execute("""
                 SELECT user_id
@@ -143,7 +143,7 @@ class ResearchesManager(AbstractDBManager):
 
         return participants
 
-    def get_candidates(self, research_id, log=False):
+    def get_candidates_ids(self, research_id, log=False):
         with self.db as (conn, cursor):
             cursor.execute("""
                 SELECT user_id
@@ -157,7 +157,37 @@ class ResearchesManager(AbstractDBManager):
                 candidates = []
 
         return candidates
+    
+    def get_pending_requests(self, research_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT urp.user_id, u.name as username
+                FROM "user_research_pending" urp
+                LEFT JOIN "user" u ON urp.user_id = u.id
+                WHERE research_id = %s
+            """, (research_id,))
+            pending = cursor.fetchall()
+            if pending:
+                pending = [{'user_id': user_id, 'username': username} for user_id, username in pending]
+            else:
+                pending = []
+        return pending
 
+    def get_accepted_participants(self, research_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT ur.user_id, u.name as username
+                FROM "user_research" ur
+                LEFT JOIN "user" u ON ur.user_id = u.id
+                WHERE research_id = %s
+            """, (research_id,))
+            accepted = cursor.fetchall()
+            if accepted:
+                accepted = [{'user_id': user_id, 'username': username} for user_id, username in accepted]
+            else:
+                accepted = []
+        return accepted
+    
     def send_request(self, research_id, user_id, log=False):
         with self.db as (conn, cursor):
             cursor.execute("""
@@ -205,3 +235,28 @@ class ResearchesManager(AbstractDBManager):
                 researches = []
             researches = [{'research_id': research_id} for research_id in researches]
         return researches
+
+    def get_created_researches_by_user_identifier(self, user_identifier):
+
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                SELECT r.id, r.name, (rs.details).key as status
+                FROM "research" r
+                LEFT JOIN "research_statuses" rs ON r.status = rs.id
+                WHERE created_by = %s
+            """, (user_identifier,))
+            researches = cursor.fetchall()
+            if researches:
+                researches = [{'id': research[0], 'name': research[1], 'status': research[2]} for research in researches]
+            else:
+                researches = []
+        return researches
+    
+    
+    def delete_accepted_participant(self, research_id, user_id, log=False):
+        with self.db as (conn, cursor):
+            cursor.execute("""
+                DELETE FROM "user_research"
+                WHERE research_id = %s AND user_id = %s
+            """, (research_id, user_id))
+            conn.commit()
